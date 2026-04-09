@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -417,4 +418,1600 @@ tr:hover td{background:var(--surface3);}
 @keyframes flagFlash{0%,100%{transform:scale(1);}50%{transform:scale(1.4);}}
 
 /* ── CONFETTI ── */
-#confetti-canvas{position:fixed;inset:0;pointer-even
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:400;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;top:76px;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:rgba(24,24,24,.95);border:1px solid var(--gold);border-radius:var(--radius-sm);
+  padding:10px 20px;font-size:13px;font-weight:600;z-index:500;
+  white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;
+  opacity:0;transition:all .3s var(--ease-out);pointer-events:none;
+  backdrop-filter:blur(12px);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── GLOW PULSE ── */
+.glow-pulse{animation:glowPulse 2s infinite;}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(240,165,0,.4);}50%{box-shadow:0 0 0 12px rgba(240,165,0,0);}}
+
+/* ── API STATUS ── */
+.api-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;}
+.api-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green);}
+.api-dot.off{background:var(--red);box-shadow:0 0 6px var(--red);}
+
+/* ── RECONECTING BANNER ── */
+.reconnect-bar{
+  background:rgba(204,26,26,.15);border-bottom:1px solid rgba(204,26,26,.3);
+  padding:8px 20px;font-size:11px;color:#FF7070;text-align:center;
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:28px 20px 22px;}
+.hero-name{font-family:var(--font-display);font-size:56px;letter-spacing:5px;line-height:1;
+  background:linear-gradient(135deg,var(--white) 20%,var(--yellow) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-sub{font-size:13px;color:var(--muted);margin-top:6px;}
+.hero-badge{
+  display:inline-block;background:var(--red);color:var(--white);font-size:9px;
+  font-weight:800;padding:4px 12px;border-radius:20px;letter-spacing:2px;
+  text-transform:uppercase;margin-top:10px;
+}
+
+/* ── WIN GLOW ── */
+@keyframes goldGlow{
+  0%{box-shadow:0 0 0 0 rgba(240,165,0,0);}
+  30%{box-shadow:0 0 60px 20px rgba(240,165,0,.6);}
+  100%{box-shadow:0 0 0 0 rgba(240,165,0,0);}
+}
+.win-glow{animation:goldGlow .8s ease-out;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:360px){.q-text{font-size:16px;}.q-opt{font-size:12px;padding:12px 8px;}}
+
+/* ── WAITING DOTS ── */
+.waiting-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--gold);margin:0 3px;
+  animation:wdot 1.2s infinite;
+}
+.waiting-dot:nth-child(2){animation-delay:.2s;}
+.waiting-dot:nth-child(3){animation-delay:.4s;}
+@keyframes wdot{0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.2);}}
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+<div id="bg-layer"></div>
+<div id="app"><!-- telas injectadas pelo JS --></div>
+<div id="toast"></div>
+<div id="flag-trigger">🇦🇴</div>
+<div class="overlay hidden" id="overlay-result">
+  <div class="result-box win" id="result-box">
+    <span class="result-emoji" id="res-emoji">🏆</span>
+    <div class="result-title" id="res-title">VITÓRIA!</div>
+    <div class="result-msg" id="res-msg"></div>
+    <div class="result-amount" id="res-amount"></div>
+    <div class="result-sub" id="res-sub"></div>
+    <button class="btn btn-gold" id="res-btn">🔄 Jogar Novamente</button>
+  </div>
+</div>
+<div class="overlay hidden" id="overlay-admin-login">
+  <div class="result-box win" style="border-color:var(--gold);">
+    <div style="font-size:36px;margin-bottom:12px;">🔐</div>
+    <div class="result-title" style="font-size:24px;margin-bottom:16px;">ÁREA RESTRITA</div>
+    <input class="field-input" type="password" id="admin-pw-input" placeholder="Senha de administrador" style="margin-bottom:12px;text-align:center;letter-spacing:4px;"/>
+    <button class="btn btn-gold" id="admin-pw-ok" style="margin-bottom:8px;">Entrar</button>
+    <button class="btn btn-ghost btn-sm" id="admin-pw-cancel" style="width:auto;margin:0 auto;display:flex;">Cancelar</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   ALUNA — JAVASCRIPT ENGINE V3.1
+   Versão de Lançamento & Testes
+   Grupo Agea Comercial | CEO Adelino Graça
+═══════════════════════════════════════════════ */
+'use strict';
+
+/* ─── CONSTANTS ─── */
+const ADMIN_SECRET = 'aluna2025';
+const PLATFORM_FEE = 0.25;
+const API_TIMEOUT_MS = 8000;
+
+const PROVINCES = ['Luanda','Benguela','Huambo','Huíla','Cabinda','Malanje','Uíge','Lunda Norte','Lunda Sul','Moxico','Cuando Cubango','Cunene','Namibe','Bié','Kwanza Norte','Kwanza Sul','Zaire','Bengo','Kuando'];
+const EDU_LEVELS = ['Ensino Primário','7ª Classe','8ª Classe','9ª Classe','10ª Classe','11ª Classe','12ª Classe','Bacharel','Licenciatura','Mestrado','Doutoramento'];
+const BET_IA   = [100,200,300,500,1000,1500,2000,3000,5000];
+const BET_REAL = [150,250,500,1000,1500,2000,5000];
+
+/* Tamanhos das salas de batalha (V3.1) */
+const ROOM_SIZES = [
+  {n:2,  label:'Duelo',    desc:'2 jogadores'},
+  {n:5,  label:'Squad',   desc:'5 jogadores'},
+  {n:10, label:'Arena',   desc:'10 jogadores'},
+  {n:50, label:'Torneio', desc:'50 jogadores'},
+];
+
+const QUESTIONS = [
+  {q:'Qual é a capital de Angola?',opts:['Luanda','Benguela','Huambo','Malanje'],a:0},
+  {q:'Em que ano Angola se tornou independente?',opts:['1972','1975','1980','1968'],a:1},
+  {q:'Qual é a moeda oficial de Angola?',opts:['Real','Kwanza','Escudo','Franco'],a:1},
+  {q:'Qual é o rio mais longo de Angola?',opts:['Kwanza','Congo','Cunene','Kubango'],a:0},
+  {q:'Qual é o maior país de língua portuguesa?',opts:['Portugal','Angola','Brasil','Moçambique'],a:2},
+  {q:'Em que oceano está Angola?',opts:['Índico','Pacífico','Atlântico','Ártico'],a:2},
+  {q:'Qual é o animal símbolo de Angola?',opts:['Leão','Palanca Negra','Elefante','Zebra'],a:1},
+  {q:'Quem foi o primeiro presidente de Angola?',opts:['J. E. dos Santos','Agostinho Neto','João Lourenço','Holden Roberto'],a:1},
+  {q:'Qual é a língua oficial de Angola?',opts:['Kimbundu','Kikongo','Português','Umbundu'],a:2},
+  {q:'Quantas províncias tem Angola?',opts:['14','16','18','20'],a:2},
+  {q:'Qual é a maior cidade de Angola?',opts:['Benguela','Huambo','Luanda','Cabinda'],a:2},
+  {q:'Qual é o ponto mais alto de Angola?',opts:['Serra da Chela','Monte Moco','Serra do Namba','Tundavala'],a:1},
+  {q:'Em que continente fica Angola?',opts:['Ásia','América','Europa','África'],a:3},
+  {q:'Qual é o clima predominante no sul de Angola?',opts:['Tropical','Árido','Mediterrânico','Polar'],a:1},
+  {q:'Angola faz fronteira com quantos países?',opts:['2','3','4','5'],a:2},
+];
+
+const WIN_MSGS  = ['🏆 Génio absoluto!','🔥 Angola te saúda!','⭐ Mente brilhante!','💎 Conhecimento = Poder!','🚀 Imparável!'];
+const LOSE_MSGS = ['📚 Estude mais e volte!','💪 Os campeões não desistem!','🌱 Cada erro é uma lição!','🎯 O conhecimento te espera!'];
+const MOTOS = [
+  'A tua mente é o teu maior ativo',
+  'Conhecimento é a chave da liberdade',
+  'Cada pergunta é um passo para o topo',
+  'Angola vence com sabedoria',
+  'O estudo de hoje é o prémio de amanhã',
+  'Investe em ti — o retorno é infinito',
+  'Cada vitória começa numa resposta certa',
+];
+
+/* ─── STATE ─── */
+const S = {
+  user: null,
+  currentTab: 'inicio',
+  luma: { phase:'lobby', bet:null, qIdx:0, selected:null, correct:false, msg:'', locked:false },
+  battle: {
+    phase:'lobby', bet:null, roomSize:20, waitCount:7,
+    qIdx:0, selected:null, score:0, result:null, locked:false,
+    answerTimeMs:0,  /* V3.1 desempate por ms */
+  },
+  admin: {
+    open:false, tab:'dashboard',
+    apiKeys:{openai:'',gemini:'',supabase:'',apenay:''},
+    settings:{winChance:70,minWithdraw:1500,maxBonus:1000,tokenValue:50,fee:25},
+    withdrawals:[
+      {user:'Esperança Lopes',amount:5000,method:'Multicaixa',number:'923456789',status:'Pendente',date:'2025-03-03'},
+      {user:'Fátima Neto',amount:8000,method:'IBAN',number:'AO06 0006 0000 1234 5',status:'Aprovado',date:'2025-03-01'},
+    ],
+    questions: QUESTIONS.slice(0,5),
+    preview:[
+      {q:'Qual é a segunda cidade de Angola?',opts:['Malanje','Benguela','Huambo','Uíge'],a:2,approved:false},
+      {q:'Quando foi fundada a cidade de Luanda?',opts:['1575','1648','1700','1850'],a:0,approved:false},
+    ],
+  },
+  flagTaps:0, flagTimer:null,
+  toastTimer:null,
+  motoTimer:null, motoIdx:0,
+  scoreRef:0, didPayRef:false, lumaDidUpdateRef:false,
+  battleIntervalRef:null,
+  /* V3.1 — tempo de início de cada pergunta (ms) */
+  questionStartMs:0,
+};
+
+const MOCK_RANK = [
+  {name:'Fátima Neto',    pts:3420,province:'Luanda',  wins:45},
+  {name:'Esperança Lopes',pts:2890,province:'Benguela',wins:24},
+  {name:'Kizua Mbemba',   pts:1760,province:'Luanda',  wins:12},
+  {name:'Carlos Teixeira',pts:980, province:'Huambo',  wins:5},
+  {name:'Ana Domingos',   pts:760, province:'Malanje', wins:4},
+  {name:'Pedro Simões',   pts:540, province:'Huíla',   wins:3},
+];
+
+/* ─── UTILS ─── */
+const $ = id => document.getElementById(id);
+const rnd = arr => arr[Math.floor(Math.random()*arr.length)];
+const fmt = n => Number(n).toLocaleString('pt-AO');
+
+function toast(msg, dur=2800){
+  clearTimeout(S.toastTimer);
+  const el=$('toast');
+  if(!el)return;
+  el.textContent=msg;
+  el.classList.add('show');
+  S.toastTimer=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+function showOverlay(id){
+  const el=$(id);
+  if(el)el.classList.remove('hidden');
+}
+function hideOverlay(id){
+  const el=$(id);
+  if(el)el.classList.add('hidden');
+}
+
+/* ─── V3.1 PERSISTÊNCIA DE ABA (localStorage) ─── */
+function saveTab(tab){
+  try{ localStorage.setItem('aluna_tab',tab); }catch(e){}
+}
+function loadTab(){
+  try{ return localStorage.getItem('aluna_tab')||'inicio'; }catch(e){ return 'inicio'; }
+}
+
+/* ─── MOTO ROTATOR ─── */
+function startMoto(){
+  clearInterval(S.motoTimer);
+  const el=document.querySelector('.footer-moto');
+  if(!el)return;
+  const set=()=>{
+    el.style.opacity='0';
+    setTimeout(()=>{
+      el.textContent='📖 '+MOTOS[S.motoIdx%MOTOS.length];
+      el.style.opacity='1';
+      S.motoIdx++;
+    },400);
+  };
+  set();
+  S.motoTimer=setInterval(set,4000);
+}
+
+/* ─── CONFETTI ─── */
+(function(){
+  const canvas=$('confetti-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let particles=[];
+  let raf=null;
+
+  function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+  }
+  window.addEventListener('resize',resize);
+  resize();
+
+  window.fireConfetti=function(){
+    particles=[];
+    const cols=['#FFD700','#F0A500','#00C97F','#CC1A1A','#FFFFFF'];
+    for(let i=0;i<120;i++){
+      particles.push({
+        x:Math.random()*canvas.width, y:-10,
+        vx:(Math.random()-0.5)*4, vy:Math.random()*5+3,
+        color:cols[Math.floor(Math.random()*cols.length)],
+        size:Math.random()*8+4, rot:Math.random()*360,
+        vrot:(Math.random()-0.5)*6, alpha:1,
+      });
+    }
+    cancelAnimationFrame(raf);
+    (function loop(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles=particles.filter(p=>p.alpha>0.01);
+      particles.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy; p.rot+=p.vrot; p.vy+=0.1; p.alpha-=0.012;
+        ctx.save();
+        ctx.globalAlpha=p.alpha;
+        ctx.translate(p.x,p.y);
+        ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle=p.color;
+        ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.5);
+        ctx.restore();
+      });
+      if(particles.length){ raf=requestAnimationFrame(loop); }
+      else { ctx.clearRect(0,0,canvas.width,canvas.height); }
+    })();
+  };
+})();
+
+/* ─── TIMER ─── */
+const Timer={
+  _t:null,_ms:0,_cb:null,_tickCb:null,
+  start(ms,onDone,onTick){
+    this.stop();
+    this._ms=ms; this._cb=onDone; this._tickCb=onTick;
+    const step=()=>{
+      this._ms-=100;
+      if(this._tickCb)this._tickCb(this._ms);
+      if(this._ms<=0){ this.stop(); if(this._cb)this._cb(); }
+      else { this._t=setTimeout(step,100); }
+    };
+    this._t=setTimeout(step,100);
+  },
+  stop(){ clearTimeout(this._t); this._t=null; },
+};
+
+/* ─── V3.1: API SAFEGUARD com timeout ─── */
+async function safeApiCall(fetchFn, fallbackMsg='Reconectando...'){
+  const timeoutPromise=new Promise((_,reject)=>{
+    setTimeout(()=>reject(new Error('timeout')),API_TIMEOUT_MS);
+  });
+  try{
+    return await Promise.race([fetchFn(),timeoutPromise]);
+  }catch(e){
+    showReconnectBanner(fallbackMsg);
+    throw e;
+  }
+}
+
+function showReconnectBanner(msg){
+  const existing=document.getElementById('reconnect-banner');
+  if(existing)return;
+  const bar=document.createElement('div');
+  bar.id='reconnect-banner';
+  bar.className='reconnect-bar';
+  bar.textContent='⚡ '+msg;
+  const header=document.querySelector('.app-header');
+  if(header){ header.insertAdjacentElement('afterend',bar); }
+  setTimeout(()=>{ if(bar.parentNode)bar.parentNode.removeChild(bar); },5000);
+}
+
+/* ─── RENDER ENGINE ─── */
+function render(tab){
+  const app=$('app');
+  if(!app)return;
+  const adminWrap=$('admin-wrap');
+  if(adminWrap)adminWrap.remove();
+  if(S.admin.open){ renderAdmin(); return; }
+
+  /* V3.1 — salva aba no localStorage */
+  S.currentTab=tab;
+  saveTab(tab);
+
+  app.innerHTML=buildShell(tab);
+  attachShellEvents();
+  const content=$('tab-content');
+  if(!content)return;
+
+  switch(tab){
+    case 'inicio':   content.innerHTML=buildHome();   attachHomeEvents();   break;
+    case 'luma':     content.innerHTML=buildLuma();   attachLumaEvents();   break;
+    case 'real':     content.innerHTML=buildBattle(); attachBattleEvents(); break;
+    case 'ranking':  content.innerHTML=buildRanking();                      break;
+    case 'carteira': content.innerHTML=buildWallet(); attachWalletEvents(); break;
+    case 'parceria': content.innerHTML=buildPartner();attachPartnerEvents();break;
+  }
+  startMoto();
+}
+
+function buildShell(tab){
+  const navItems=[['inicio','🏠 Início'],['luma','🤖 Luma IA'],['real','⚔️ Batalha'],['ranking','🏆 Rank'],['carteira','💰 Carteira'],['parceria','🤝 Parceria']];
+  return `
+  <div class="screen active" style="display:flex;flex-direction:column;height:100dvh;overflow:hidden;">
+    <header class="app-header">
+      <div><div class="logo-mark">Aluna</div><div class="logo-sub">Grupo Agea Comercial</div></div>
+      ${S.user?`<div class="balance-pill">💰 <span id="hdr-bal">${fmt(S.user.balance)}</span> Kz</div>`:''}
+    </header>
+    <nav class="app-nav">
+      ${navItems.map(([k,l])=>`<button class="nav-item${tab===k?' active':''}" data-tab="${k}">${l}</button>`).join('')}
+    </nav>
+    <div class="scroll-area" id="tab-content"></div>
+    <footer class="app-footer">
+      <div class="footer-brand">Aluna</div>
+      <div class="footer-contact">Grupo Agea Comercial · 📞 937876711</div>
+      <div class="footer-moto"></div>
+      <div class="footer-sign">GRUPO AGEA COMERCIAL | CEO ADELINO GRAÇA</div>
+    </footer>
+  </div>`;
+}
+
+function attachShellEvents(){
+  document.querySelectorAll('.nav-item').forEach(btn=>{
+    btn.addEventListener('click',()=>{ render(btn.dataset.tab); });
+  });
+}
+
+function updateHeaderBalance(){
+  const el=$('hdr-bal');
+  if(el&&S.user)el.textContent=fmt(S.user.balance);
+}
+
+/* ─── SPLASH ─── */
+function showSplash(){
+  $('app').innerHTML=`
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:var(--black);">
+    <div style="font-family:var(--font-display);font-size:90px;letter-spacing:10px;background:linear-gradient(135deg,#FFD700,#F0A500,#c87800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:screenIn .6s var(--ease-out);">Aluna</div>
+    <div style="font-size:11px;color:var(--muted);letter-spacing:4px;text-transform:uppercase;margin-top:6px;opacity:.7;">Conhecimento · Poder · Vitória</div>
+    <div style="margin-top:36px;display:flex;gap:8px;">
+      <div class="waiting-dot"></div><div class="waiting-dot"></div><div class="waiting-dot"></div>
+    </div>
+    <div style="margin-top:56px;font-size:10px;color:#444;letter-spacing:2px;font-family:var(--font-display);">GRUPO AGEA COMERCIAL | CEO ADELINO GRAÇA</div>
+  </div>`;
+  setTimeout(showLogin,2400);
+}
+
+/* ─── LOGIN ─── */
+function showLogin(){
+  let mode='login';
+  function draw(){
+    $('app').innerHTML=`
+    <div class="screen active" style="display:flex;flex-direction:column;height:100dvh;justify-content:center;padding:32px 20px;overflow-y:auto;touch-action:pan-y !important;-webkit-overflow-scrolling:touch !important;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="font-family:var(--font-display);font-size:72px;letter-spacing:8px;background:linear-gradient(135deg,#FFD700,#F0A500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Aluna</div>
+        <div style="font-size:12px;color:var(--muted);">O teu conhecimento tem valor real</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:22px;">
+        <button class="btn ${mode==='login'?'btn-gold':'btn-ghost'}" id="mode-login">Entrar</button>
+        <button class="btn ${mode==='register'?'btn-gold':'btn-ghost'}" id="mode-reg">Criar Conta</button>
+      </div>
+      ${mode==='login'?`
+      <div class="card">
+        <div class="field"><label class="field-label">E-mail</label><input class="field-input" id="l-email" type="email" placeholder="teu@email.com"/></div>
+        <div class="field"><label class="field-label">Senha</label><input class="field-input" id="l-pass" type="password" placeholder="••••••••"/></div>
+        <button class="btn btn-gold glow-pulse" id="do-login" style="margin-top:6px;">Entrar na Aluna</button>
+      </div>`:`
+      <div class="card" style="overflow-y:auto;max-height:65dvh;">
+        <div class="field"><label class="field-label">Nome Completo</label><input class="field-input" id="r-name" placeholder="Teu nome"/></div>
+        <div class="field"><label class="field-label">E-mail</label><input class="field-input" id="r-email" type="email" placeholder="teu@email.com"/></div>
+        <div class="field"><label class="field-label">Contacto</label><input class="field-input" id="r-phone" type="tel" placeholder="9XX XXX XXX"/></div>
+        <div class="field"><label class="field-label">Província</label><select class="field-input" id="r-prov">${PROVINCES.map(p=>`<option>${p}</option>`).join('')}</select></div>
+        <div class="field"><label class="field-label">Nível de Ensino</label><select class="field-input" id="r-edu">${EDU_LEVELS.map(l=>`<option>${l}</option>`).join('')}</select></div>
+        <div class="field"><label class="field-label">Senha</label><input class="field-input" id="r-pass" type="password" placeholder="Mínimo 6 caracteres"/></div>
+        <button class="btn btn-gold glow-pulse" id="do-reg" style="margin-top:6px;">🚀 Criar Conta</button>
+      </div>`}
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;">💡 Cada 5 convites válidos = <strong style="color:var(--gold);">200 Kz em tokens</strong></div>
+    </div>`;
+    $('mode-login').onclick=()=>{mode='login';draw();};
+    $('mode-reg').onclick=()=>{mode='register';draw();};
+    if(mode==='login'){
+      const doL=()=>{
+        const e=$('l-email').value.trim(), p=$('l-pass').value.trim();
+        if(!e||!p)return toast('⚠️ Preenche todos os campos');
+        S.user={name:'Kizua Mbemba',email:e,province:'Luanda',level:'12ª Classe',balance:1500,tokens:2,invites:2,inviteCode:'ALUNA-K7X2',wins:3,losses:1};
+        toast('🎉 Bem-vindo à Aluna!');
+        const savedTab=loadTab();
+        render(savedTab);
+      };
+      $('do-login').onclick=doL;
+      $('l-pass').onkeydown=e=>{ if(e.key==='Enter')doL(); };
+    } else {
+      $('do-reg').onclick=()=>{
+        const n=$('r-name').value.trim(), e=$('r-email').value.trim(),
+              ph=$('r-phone').value.trim(), p=$('r-pass').value.trim();
+        if(!n||!e||!ph||!p)return toast('⚠️ Preenche todos os campos');
+        if(p.length<6)return toast('⚠️ Senha mínima: 6 caracteres');
+        S.user={name:n,email:e,province:$('r-prov').value,level:$('r-edu').value,
+          balance:200,tokens:0,invites:0,
+          inviteCode:'ALUNA-'+Math.random().toString(36).slice(2,6).toUpperCase(),
+          wins:0,losses:0};
+        toast('🚀 Conta criada com sucesso!');
+        render('inicio');
+      };
+    }
+  }
+  draw();
+}
+
+/* ─── HOME ─── */
+function buildHome(){
+  const u=S.user;
+  const progress=((u.invites%5)/5)*100;
+  const winRate=u.wins+u.losses>0?Math.round(u.wins/(u.wins+u.losses)*100):0;
+  return `
+  <div class="hero">
+    <div style="font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;">Bem-vindo,</div>
+    <div class="hero-name">${u.name.split(' ')[0]}</div>
+    <div class="hero-sub">${u.province} · ${u.level}</div>
+    <div class="hero-badge">🇦🇴 Jogador Aluna</div>
+  </div>
+  <div class="stats-grid stats-grid-3">
+    <div class="stat-box"><div class="stat-val">${fmt(u.balance)}</div><div class="stat-label">Kz Saldo</div></div>
+    <div class="stat-box"><div class="stat-val">${u.wins}</div><div class="stat-label">Vitórias</div></div>
+    <div class="stat-box"><div class="stat-val">${u.tokens}</div><div class="stat-label">Tokens</div></div>
+  </div>
+  <div class="card card-gold">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div class="sec-title">Jogar Agora</div>
+      <span class="badge badge-gold">🔴 AO VIVO</span>
+    </div>
+    <button class="btn btn-gold" id="go-luma" style="margin-bottom:10px;">🤖 Jogar com Luma IA</button>
+    <button class="btn btn-red" id="go-battle">⚔️ Batalhar com Jogadores</button>
+  </div>
+  <div class="invite-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:2px;">🔗 Teu Link de Convite</div>
+        <div style="font-size:11px;color:var(--muted);">Cada 5 amigos = 200 Kz</div>
+      </div>
+      <span class="badge badge-gold">${u.invites} convite${u.invites!==1?'s':''}</span>
+    </div>
+    <div class="invite-code" id="invite-code">${u.inviteCode}</div>
+    <div class="prog-bar"><div class="prog-fill" style="width:${progress}%;"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);">
+      <span>${u.invites%5}/5 para próximo bónus</span>
+      <span style="color:var(--gold);">+200 Kz</span>
+    </div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(10,26,10,.9),rgba(24,24,24,.9));">
+    <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">📊 Estatísticas</div>
+    <div class="stats-grid stats-grid-2" style="margin-bottom:10px;">
+      <div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:var(--green);">${u.wins}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Vitórias</div></div>
+      <div style="text-align:center;"><div style="font-size:32px;font-weight:800;color:var(--red);">${u.losses}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Derrotas</div></div>
+    </div>
+    <div style="height:1px;background:var(--border);margin-bottom:10px;"></div>
+    <div style="text-align:center;"><div style="font-size:10px;color:var(--muted);">Taxa de Vitórias</div><div style="font-size:36px;font-weight:800;color:var(--gold);">${winRate}%</div></div>
+  </div>`;
+}
+
+function attachHomeEvents(){
+  $('go-luma').onclick=()=>render('luma');
+  $('go-battle').onclick=()=>render('real');
+  $('invite-code').onclick=()=>{
+    const link=`https://aluna.ao/convite/${S.user.inviteCode}`;
+    if(navigator.clipboard){ navigator.clipboard.writeText(link).catch(()=>{}); }
+    toast('🔗 Link copiado! Partilha com os teus amigos.');
+    $('invite-code').textContent='✅ Copiado!';
+    setTimeout(()=>{ const el=$('invite-code'); if(el)el.textContent=S.user.inviteCode; },2000);
+  };
+}
+
+/* ─── LUMA ─── */
+function buildLuma(){
+  const L=S.luma;
+  if(L.phase==='lobby')    return buildLumaLobby();
+  if(L.phase==='question') return buildLumaQuestion();
+  return '';
+}
+
+function buildLumaLobby(){
+  return `
+  <div style="text-align:center;margin-bottom:20px;">
+    <div class="luma-avatar">🤖</div>
+    <div class="sec-title" style="color:var(--gold);">Jogar com Luma</div>
+    <div class="sec-sub">A tua rival de inteligência artificial</div>
+  </div>
+  <div class="chat-bubble">
+    Olá! Sou a <strong>Luma</strong>, a IA da Aluna. 🇦🇴<br/><br/>
+    Cada pergunta tem <strong>5 segundos</strong>. Responde antes do tempo esgotar para ganhar o dobro da tua aposta!
+  </div>
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:12px;font-size:13px;">💸 Valor da Aposta</div>
+    <div class="bet-grid">
+      ${BET_IA.map(v=>`<div class="chip${S.luma.bet===v?' on':''}" data-v="${v}">${fmt(v)} Kz</div>`).join('')}
+    </div>
+    <button class="btn btn-gold glow-pulse" id="luma-start" style="margin-bottom:10px;">🎮 Começar Jogo</button>
+    <button class="btn btn-edu" id="luma-free">🆓 Modo Educativo Grátis</button>
+  </div>
+  <div style="text-align:center;font-size:12px;color:var(--muted);margin-top:4px;">
+    Saldo: <strong style="color:var(--gold);">${fmt(S.user.balance)} Kz</strong>
+  </div>`;
+}
+
+function buildLumaQuestion(){
+  const L=S.luma;
+  const q=QUESTIONS[L.qIdx%QUESTIONS.length];
+  return `
+  <div class="timer-wrap">
+    <div class="timer-top">
+      <span class="timer-label">⏱ TEMPO</span>
+      <span class="timer-count" id="timer-count">5</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--green);"></div></div>
+  </div>
+  <div class="q-card">
+    <div class="q-label">Pergunta ${(L.qIdx%QUESTIONS.length)+1} · ${L.bet>0?'Aposta: '+fmt(L.bet)+' Kz':'Modo Educativo Grátis'}</div>
+    <div class="q-text">${q.q}</div>
+    <div class="q-opts">
+      ${q.opts.map((o,i)=>`<div class="q-opt${L.selected!==null?' locked':''} ${L.selected!==null?(i===q.a?'correct':(i===L.selected?'wrong':'')):''}" data-i="${i}">${o}</div>`).join('')}
+    </div>
+    ${L.selected!==null?`<div style="text-align:center;margin-top:14px;font-size:14px;font-weight:700;color:${L.correct?'var(--green)':'var(--red)'};">${L.correct?'✅ Correcto!':'❌ Errado!'}</div>`:''}
+  </div>`;
+}
+
+function attachLumaEvents(){
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.onclick=()=>{
+      S.luma.bet=Number(c.dataset.v);
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on');
+    };
+  });
+
+  const startBtn=$('luma-start');
+  if(startBtn) startBtn.onclick=()=>{
+    if(!S.luma.bet) return toast('⚠️ Escolhe o valor da aposta');
+    if(S.luma.bet>S.user.balance) return toast('⚠️ Saldo insuficiente!');
+    startLumaGame(false);
+  };
+
+  /* V3.1 — Modo Educativo Grátis */
+  const freeBtn=$('luma-free');
+  if(freeBtn) freeBtn.onclick=()=>showAdBanner(()=>startLumaGame(true));
+}
+
+/* ─── V3.1 BANNER DE ANÚNCIO ─── */
+function showAdBanner(onComplete){
+  const app=$('app');
+  const dur=5; /* segundos de anúncio */
+  let remaining=dur;
+
+  const bannerHtml=`
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;background:var(--black);padding:24px;">
+    <div class="ad-banner" style="max-width:400px;width:100%;">
+      <div class="ad-tag">📢 Patrocinado</div>
+      <div class="ad-title">HOMEM FORTE</div>
+      <div class="ad-sub">
+        Suplementos naturais angolanos.<br/>
+        <strong style="color:var(--green);">Força · Saúde · Confiança</strong><br/><br/>
+        "Manual de Caligrafia" disponível nas livrarias.<br/>
+        Aprende, cresce e vence com a Aluna!
+      </div>
+      <div class="ad-bar"><div class="ad-bar-fill" id="ad-fill" style="width:0%;"></div></div>
+      <div class="ad-timer" id="ad-timer">O jogo começa em <strong>${dur}s</strong>...</div>
+    </div>
+  </div>`;
+
+  app.innerHTML=bannerHtml;
+
+  let elapsed=0;
+  const iv=setInterval(()=>{
+    elapsed++;
+    remaining=dur-elapsed;
+    const fillEl=$('ad-fill');
+    const timerEl=$('ad-timer');
+    if(fillEl) fillEl.style.width=((elapsed/dur)*100)+'%';
+    if(timerEl) timerEl.innerHTML=remaining>0?`O jogo começa em <strong>${remaining}s</strong>...`:'<strong style="color:var(--green);">A iniciar...</strong>';
+    if(elapsed>=dur){
+      clearInterval(iv);
+      onComplete();
+    }
+  },1000);
+}
+
+function startLumaGame(free){
+  if(free) S.luma.bet=0;
+  S.luma.phase='question';
+  S.luma.selected=null;
+  S.luma.locked=false;
+  S.lumaDidUpdateRef=false;
+  render('luma');
+  startLumaTimer();
+  document.querySelectorAll('.q-opt').forEach(opt=>{
+    opt.onclick=()=>lumaAnswer(Number(opt.dataset.i));
+  });
+}
+
+function startLumaTimer(){
+  const totalMs=5000;
+  S.questionStartMs=Date.now();
+  Timer.start(totalMs,()=>{
+    if(!S.luma.locked) lumaAnswer(-1);
+  },(ms)=>{
+    const el=$('timer-count'); const fill=$('timer-fill');
+    if(!el||!fill)return;
+    el.textContent=Math.ceil(ms/1000);
+    const pct=(ms/totalMs)*100;
+    fill.style.width=pct+'%';
+    fill.style.background=ms<=2000?'var(--red)':ms<=3000?'var(--gold)':'var(--green)';
+    if(ms<=2000) el.classList.add('urgent'); else el.classList.remove('urgent');
+  });
+}
+
+function lumaAnswer(idx){
+  if(S.luma.locked)return;
+  S.luma.locked=true;
+  Timer.stop();
+  const q=QUESTIONS[S.luma.qIdx%QUESTIONS.length];
+  S.luma.selected=idx;
+  const win=idx===q.a;
+  S.luma.correct=win;
+  S.luma.msg=win?rnd(WIN_MSGS):rnd(LOSE_MSGS);
+
+  if(!S.lumaDidUpdateRef&&S.luma.bet>0){
+    S.lumaDidUpdateRef=true;
+    S.user.balance=win?S.user.balance+S.luma.bet:S.user.balance-S.luma.bet;
+    S.user.wins+=win?1:0;
+    S.user.losses+=win?0:1;
+  }
+
+  render('luma');
+  setTimeout(()=>showLumaResult(),1100);
+}
+
+function showLumaResult(){
+  const L=S.luma;
+  const rb=$('result-box');
+  if(!rb)return;
+  rb.className='result-box '+(L.correct?'win':'lose');
+  $('res-emoji').textContent=L.correct?'🏆':'😤';
+  $('res-title').textContent=L.correct?'VITÓRIA!':'DERROTA!';
+  $('res-title').style.color=L.correct?'var(--gold)':'var(--red)';
+  $('res-msg').textContent=L.msg;
+  if(L.bet>0){
+    $('res-amount').textContent=(L.correct?'+':'-')+fmt(L.bet)+' Kz';
+    $('res-amount').style.color=L.correct?'var(--green)':'var(--red)';
+  } else {
+    $('res-amount').textContent=L.correct?'✅ Resposta Correcta!':'❌ Resposta Errada';
+    $('res-amount').style.color=L.correct?'var(--green)':'var(--red)';
+  }
+  $('res-sub').textContent=L.bet>0?'Novo saldo: '+fmt(S.user.balance)+' Kz':'Modo Educativo — sem apostas';
+  $('res-btn').textContent='🔄 Jogar Novamente';
+  $('res-btn').onclick=()=>{
+    hideOverlay('overlay-result');
+    S.luma={phase:'lobby',bet:null,qIdx:S.luma.qIdx+1,selected:null,correct:false,msg:'',locked:false};
+    S.lumaDidUpdateRef=false;
+    render('luma');
+  };
+  showOverlay('overlay-result');
+  if(L.correct){ fireConfetti(); rb.classList.add('win-glow'); setTimeout(()=>rb.classList.remove('win-glow'),900); }
+  updateHeaderBalance();
+}
+
+/* ─── BATTLE ─── */
+function buildBattle(){
+  const B=S.battle;
+  if(B.phase==='lobby')    return buildBattleLobby();
+  if(B.phase==='waiting')  return buildBattleWaiting();
+  if(B.phase==='question') return buildBattleQuestion();
+  return '';
+}
+
+function buildBattleLobby(){
+  const maxPlayers=S.battle.roomSize||20;
+  return `
+  <div class="sec-title">⚔️ Batalha Real</div>
+  <div class="sec-sub">Joga contra outros utilizadores angolanos</div>
+  <div class="card card-red" style="margin-bottom:14px;">
+    <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:1px;margin-bottom:6px;">💡 COMO FUNCIONA</div>
+    <div style="font-size:13px;line-height:1.8;">
+      Escolhe a tua sala · 5 perguntas · 5 segundos por pergunta<br/>
+      <span style="color:var(--muted);">Desempate por velocidade de resposta (milissegundos)</span>
+    </div>
+  </div>
+
+  <!-- V3.1 — Salas de Lotação -->
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:12px;font-size:13px;">🏟️ Escolhe a Sala</div>
+    <div class="room-grid">
+      ${ROOM_SIZES.map(r=>`
+      <div class="room-card${S.battle.roomSize===r.n?' on':''}" data-room="${r.n}">
+        <div class="room-num">${r.n}</div>
+        <div class="room-lbl">${r.label}</div>
+        <div style="font-size:10px;color:var(--muted);">${r.desc}</div>
+        <div class="room-prize">Prémio: ${fmt(r.n*500*(1-PLATFORM_FEE))}+ Kz</div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:12px;font-size:13px;">💸 Valor da Aposta</div>
+    <div class="bet-grid">
+      ${BET_REAL.map(v=>`<div class="chip${S.battle.bet===v?' on':''}" data-v="${v}">${fmt(v)} Kz</div>`).join('')}
+    </div>
+    <button class="btn btn-red glow-pulse" id="battle-join" style="margin-top:4px;">⚔️ Entrar na Batalha</button>
+    <button class="btn btn-edu" id="battle-free" style="margin-top:8px;">🆓 Jogar Gratuitamente</button>
+  </div>
+  <div style="text-align:center;font-size:11px;color:var(--muted);">
+    Taxa da plataforma (25%) deduzida automaticamente do prémio
+  </div>`;
+}
+
+function buildBattleWaiting(){
+  const B=S.battle;
+  const maxP=B.roomSize||20;
+  return `
+  <div class="card" style="text-align:center;padding:36px 20px;">
+    <div style="font-size:40px;margin-bottom:14px;">⏳</div>
+    <div class="sec-title">A aguardar jogadores</div>
+    <div style="font-size:14px;color:var(--muted);margin:12px 0;" id="wait-count-lbl">${B.waitCount}/${maxP} jogadores na sala</div>
+    <div class="prog-bar"><div class="prog-fill" id="wait-fill" style="width:${(B.waitCount/maxP)*100}%;"></div></div>
+    <div style="margin-top:16px;font-size:11px;color:var(--muted);">O jogo começa com ${maxP} jogadores</div>
+    <div style="margin-top:18px;"><span class="waiting-dot"></span><span class="waiting-dot"></span><span class="waiting-dot"></span></div>
+    ${B.bet>0?`<div style="margin-top:16px;padding:10px;background:var(--surface3);border-radius:8px;font-size:12px;color:var(--muted);" id="prize-lbl">Prémio acumulado: <strong style="color:var(--gold);">${fmt(B.waitCount*B.bet*(1-PLATFORM_FEE))} Kz</strong></div>`:''}
+  </div>`;
+}
+
+function buildBattleQuestion(){
+  const B=S.battle;
+  const q=QUESTIONS[B.qIdx%QUESTIONS.length];
+  return `
+  <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+    <span class="badge badge-red">Pergunta ${B.qIdx+1}/5</span>
+    <span class="badge badge-gold">Pontos: ${B.score}</span>
+  </div>
+  <div class="timer-wrap">
+    <div class="timer-top">
+      <span class="timer-label">⏱ TEMPO</span>
+      <span class="timer-count" id="timer-count">5</span>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%;background:var(--green);"></div></div>
+  </div>
+  <div class="q-card">
+    <div class="q-text">${q.q}</div>
+    <div class="q-opts">
+      ${q.opts.map((o,i)=>`<div class="q-opt${B.selected!==null?' locked':''} ${B.selected!==null?(i===q.a?'correct':(i===B.selected?'wrong':'')):''}" data-i="${i}">${o}</div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function attachBattleEvents(){
+  /* Room selector */
+  document.querySelectorAll('.room-card').forEach(card=>{
+    card.onclick=()=>{
+      S.battle.roomSize=Number(card.dataset.room);
+      document.querySelectorAll('.room-card').forEach(x=>x.classList.remove('on'));
+      card.classList.add('on');
+    };
+  });
+
+  /* Bet chips */
+  document.querySelectorAll('.chip').forEach(c=>{
+    c.onclick=()=>{
+      S.battle.bet=Number(c.dataset.v);
+      document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+      c.classList.add('on');
+    };
+  });
+
+  const joinBtn=$('battle-join');
+  if(joinBtn) joinBtn.onclick=()=>{
+    if(S.battle.bet===null) return toast('⚠️ Escolhe o valor da aposta');
+    if(S.battle.bet>S.user.balance) return toast('⚠️ Saldo insuficiente!');
+    startBattleWait(false);
+  };
+
+  const freeBtn=$('battle-free');
+  if(freeBtn) freeBtn.onclick=()=>showAdBanner(()=>startBattleWait(true));
+}
+
+function startBattleWait(free){
+  if(free) S.battle.bet=0;
+  const maxP=S.battle.roomSize||20;
+  S.battle.phase='waiting';
+  S.battle.waitCount=Math.max(1, Math.floor(maxP*0.35));
+  S.scoreRef=0; S.didPayRef=false;
+  S.battle.score=0; S.battle.qIdx=0; S.battle.selected=null; S.battle.locked=false;
+  render('real');
+  clearInterval(S.battleIntervalRef);
+  S.battleIntervalRef=setInterval(()=>{
+    S.battle.waitCount++;
+    const fillEl=$('wait-fill');
+    const cntEl=$('wait-count-lbl');
+    const prizeEl=$('prize-lbl');
+    if(fillEl) fillEl.style.width=(S.battle.waitCount/maxP*100)+'%';
+    if(cntEl) cntEl.textContent=S.battle.waitCount+'/'+maxP+' jogadores na sala';
+    if(prizeEl&&S.battle.bet>0) prizeEl.innerHTML='Prémio acumulado: <strong style="color:var(--gold);">'+fmt(S.battle.waitCount*S.battle.bet*(1-PLATFORM_FEE))+' Kz</strong>';
+    if(S.battle.waitCount>=maxP){
+      clearInterval(S.battleIntervalRef);
+      S.battle.phase='question';
+      render('real');
+      attachBattleQuestionEvents();
+      startBattleTimer();
+    }
+  },400);
+}
+
+function attachBattleQuestionEvents(){
+  document.querySelectorAll('.q-opt').forEach(opt=>{
+    opt.onclick=()=>battleAnswer(Number(opt.dataset.i));
+  });
+}
+
+function startBattleTimer(){
+  S.questionStartMs=Date.now();
+  Timer.start(5000,()=>{ if(!S.battle.locked) battleAnswer(-1); },(ms)=>{
+    const el=$('timer-count'); const fill=$('timer-fill');
+    if(!el||!fill)return;
+    el.textContent=Math.ceil(ms/1000);
+    const pct=(ms/5000)*100;
+    fill.style.width=pct+'%';
+    fill.style.background=ms<=2000?'var(--red)':ms<=3000?'var(--gold)':'var(--green)';
+    if(ms<=2000) el.classList.add('urgent'); else el.classList.remove('urgent');
+  });
+}
+
+function battleAnswer(idx){
+  if(S.battle.locked)return;
+  S.battle.locked=true;
+  Timer.stop();
+
+  /* V3.1 — Registo de tempo de resposta em ms para desempate */
+  const responseMs=Date.now()-S.questionStartMs;
+  S.battle.answerTimeMs=(S.battle.answerTimeMs||0)+responseMs;
+
+  const q=QUESTIONS[S.battle.qIdx%QUESTIONS.length];
+  S.battle.selected=idx;
+  if(idx===q.a){ S.scoreRef++; S.battle.score=S.scoreRef; }
+
+  /* re-render para mostrar correcto/errado */
+  render('real');
+  attachBattleQuestionEvents();
+
+  setTimeout(()=>{
+    if(S.battle.qIdx>=4){
+      const finalScore=S.scoreRef;
+      const maxP=S.battle.roomSize||20;
+
+      /* V3.1 — Desempate por precisão: 1º mais acertos, 2º mais rápido */
+      /* Simulação: adversário fictício com 4 acertos e tempo aleatório */
+      const opponentScore=4;
+      const opponentTimeMs=Math.floor(Math.random()*15000+8000);
+      let isWinner=false;
+      if(finalScore>opponentScore){ isWinner=true; }
+      else if(finalScore===opponentScore){ isWinner=S.battle.answerTimeMs<opponentTimeMs; }
+      else { isWinner=false; }
+
+      const totalPool=maxP*S.battle.bet;
+      const prize=Math.round(totalPool*(1-PLATFORM_FEE));
+      if(S.battle.bet>0&&!S.didPayRef){
+        S.didPayRef=true;
+        if(isWinner) S.user.balance+=prize-S.battle.bet;
+        else S.user.balance-=S.battle.bet;
+        if(isWinner) S.user.wins++; else S.user.losses++;
+      }
+      S.battle.result={isWinner,prize,bet:S.battle.bet,finalScore,responseMs:S.battle.answerTimeMs};
+      showBattleResult();
+    } else {
+      S.battle.qIdx++;
+      S.battle.selected=null;
+      S.battle.locked=false;
+      render('real');
+      attachBattleQuestionEvents();
+      startBattleTimer();
+    }
+  },1000);
+}
+
+function showBattleResult(){
+  const r=S.battle.result;
+  const rb=$('result-box');
+  if(!rb)return;
+  rb.className='result-box '+(r.isWinner?'win':'lose');
+  $('res-emoji').textContent=r.isWinner?'🥇':'😔';
+  $('res-title').textContent=r.isWinner?'VENCEDOR!':'SEM PRÉMIO';
+  $('res-title').style.color=r.isWinner?'var(--gold)':'var(--red)';
+  $('res-msg').textContent=r.isWinner?'Parabéns! O teu conhecimento é superior!'+
+    (r.finalScore===r.finalScore?' Precisão máxima!':''):rnd(LOSE_MSGS);
+  if(r.bet>0){
+    $('res-amount').textContent=r.isWinner?'+'+fmt(r.prize)+' Kz':'-'+fmt(r.bet)+' Kz';
+    $('res-amount').style.color=r.isWinner?'var(--green)':'var(--red)';
+  } else {
+    $('res-amount').textContent='Pontuação: '+r.finalScore+'/5';
+    $('res-amount').style.color='var(--gold)';
+  }
+  $('res-sub').textContent='Pontos: '+r.finalScore+'/5 · Tempo médio: '+Math.round(r.responseMs/5)+'ms';
+  $('res-btn').textContent='🔄 Nova Batalha';
+  $('res-btn').onclick=()=>{
+    hideOverlay('overlay-result');
+    S.battle={phase:'lobby',bet:null,roomSize:S.battle.roomSize||20,waitCount:7,qIdx:0,selected:null,score:0,result:null,locked:false,answerTimeMs:0};
+    S.scoreRef=0; S.didPayRef=false;
+    render('real');
+  };
+  showOverlay('overlay-result');
+  if(r.isWinner){ fireConfetti(); }
+  updateHeaderBalance();
+}
+
+/* ─── RANKING ─── */
+function buildRanking(){
+  const medalCls=['gold-c','silver-c','bronze-c'];
+  const avatarBg=['var(--gold)','#666','#8B4513','var(--red)','var(--red)','var(--red)'];
+  return `
+  <div class="sec-title">🏆 Ranking Nacional</div>
+  <div class="sec-sub">Os melhores jogadores de Angola</div>
+  ${MOCK_RANK.map((r,i)=>`
+  <div class="rank-item" style="${i<3?'border-color:'+['rgba(255,215,0,.4)','rgba(170,170,170,.3)','rgba(205,127,50,.3)'][i]:''};${i===0?'background:linear-gradient(135deg,rgba(26,18,0,.9),rgba(24,24,24,.9));':''}">
+    <div class="rank-pos ${medalCls[i]||''}">${i+1}</div>
+    <div class="rank-avatar" style="background:${avatarBg[i]};">${r.name[0]}</div>
+    <div class="rank-info">
+      <div class="rank-name">${r.name}${i===0?' 👑':''}</div>
+      <div class="rank-detail">${r.province} · ${r.wins} vitórias</div>
+    </div>
+    <div class="rank-score">${fmt(r.pts)} pts</div>
+  </div>`).join('')}`;
+}
+
+/* ─── WALLET ─── */
+let walletView='main';
+function buildWallet(){
+  const u=S.user;
+  const main=`
+  <div class="sec-title">💰 Carteira</div>
+  <div class="sec-sub">Saldo, depósitos e levantamentos</div>
+  <div class="stats-grid stats-grid-2">
+    <div class="stat-box" style="border-color:rgba(240,165,0,.4);"><div class="stat-val">${fmt(u.balance)}</div><div class="stat-label">Saldo Kz</div></div>
+    <div class="stat-box"><div class="stat-val">${u.tokens}</div><div class="stat-label">Tokens</div></div>
+  </div>
+  <button class="btn btn-gold" id="w-dep" style="margin-bottom:10px;">📥 Depositar</button>
+  <button class="btn btn-green" id="w-wd" style="margin-bottom:10px;">📤 Levantar</button>
+  <div class="card" style="font-size:12px;color:var(--muted);">
+    <strong style="color:var(--white);display:block;margin-bottom:6px;">ℹ️ Informações</strong>
+    1 Token = 50 Kz · Mínimo de levantamento: 1.500 Kz<br/>Pagamentos processados em 24-48 horas úteis
+  </div>`;
+
+  const deposit=`
+  <div class="sec-title">📥 Depositar</div>
+  <div class="card">
+    <div class="field"><label class="field-label">Método</label>
+      <select class="field-input" id="w-method"><option>Multicaixa Express</option><option>IBAN Bancário</option></select>
+    </div>
+    <div class="field"><label class="field-label">Valor (Kz)</label>
+      <input class="field-input" id="w-dep-amt" type="number" min="1" placeholder="Ex: 2000"/>
+    </div>
+    <div style="background:var(--surface3);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+      ${[['1','Transfere o valor via Multicaixa Express ou IBAN'],['2','Tira foto ou screenshot do comprovativo'],['3','Envia via WhatsApp: <strong style="color:var(--gold);">937876711</strong>']].map(([n,t])=>`<div class="pay-step"><div class="pay-num">${n}</div><div class="pay-text">${t}</div></div>`).join('')}
+    </div>
+    <button class="btn btn-gold" id="w-dep-confirm">Confirmar e Enviar</button>
+    <button class="btn btn-ghost" id="w-back" style="margin-top:8px;">← Voltar</button>
+  </div>`;
+
+  const withdraw=`
+  <div class="sec-title">📤 Levantar</div>
+  <div class="card">
+    <div class="field"><label class="field-label">Nome Completo</label><input class="field-input" id="wd-name" placeholder="Como no Multicaixa"/></div>
+    <div class="field"><label class="field-label">Nº Multicaixa / IBAN</label><input class="field-input" id="wd-num" placeholder="9XX XXX XXX"/></div>
+    <div class="field"><label class="field-label">Valor (Kz) — mínimo 1.500</label><input class="field-input" id="wd-amt" type="number" min="1500" placeholder="1500"/></div>
+    <button class="btn btn-green" id="wd-confirm">Solicitar Levantamento</button>
+    <button class="btn btn-ghost" id="w-back" style="margin-top:8px;">← Voltar</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;text-align:center;">Saldo: <strong style="color:var(--gold);">${fmt(u.balance)} Kz</strong></div>
+  </div>`;
+
+  return walletView==='main'?main:walletView==='deposit'?deposit:withdraw;
+}
+
+function attachWalletEvents(){
+  if(walletView==='main'){
+    const dep=$('w-dep'); if(dep) dep.onclick=()=>{ walletView='deposit'; renderTab('carteira'); };
+    const wd=$('w-wd');   if(wd)  wd.onclick=()=>{ walletView='withdraw'; renderTab('carteira'); };
+  } else {
+    const back=$('w-back'); if(back) back.onclick=()=>{ walletView='main'; renderTab('carteira'); };
+    if(walletView==='deposit'){
+      const conf=$('w-dep-confirm');
+      if(conf) conf.onclick=()=>{
+        const v=parseInt($('w-dep-amt')?.value||'0');
+        if(!v||v<=0) return toast('⚠️ Indica um valor válido');
+        const m=$('w-method')?.value||'Multicaixa Express';
+        const wa=`https://wa.me/244937876711?text=${encodeURIComponent('Depósito Aluna\nMétodo: '+m+'\nValor: '+fmt(v)+' Kz\nUtilizador: '+S.user.name+'\n\n[Comprovativo em anexo]')}`;
+        toast('📲 A abrir WhatsApp...');
+        setTimeout(()=>window.open(wa,'_blank'),600);
+        walletView='main'; renderTab('carteira');
+      };
+    } else {
+      const wconf=$('wd-confirm');
+      if(wconf) wconf.onclick=()=>{
+        const n=$('wd-name')?.value.trim(), num=$('wd-num')?.value.trim(), v=parseInt($('wd-amt')?.value||'0');
+        if(!n||!num||!v) return toast('⚠️ Preenche todos os campos');
+        if(v<1500) return toast('⚠️ Mínimo: 1.500 Kz');
+        if(v>S.user.balance) return toast('⚠️ Saldo insuficiente');
+        S.admin.withdrawals.unshift({user:S.user.name,amount:v,method:'Multicaixa',number:num,status:'Pendente',date:new Date().toISOString().slice(0,10)});
+        toast('✅ Pedido enviado! Processamento em 24-48h.');
+        walletView='main'; renderTab('carteira');
+      };
+    }
+  }
+}
+
+function renderTab(tab){
+  const content=$('tab-content');
+  if(!content)return;
+  if(tab==='carteira'){ content.innerHTML=buildWallet(); attachWalletEvents(); }
+}
+
+/* ─── PARTNER ─── */
+function buildPartner(){
+  const types=['Patrocinador','Escola / Universidade','Empresa Tecnológica','Media / Rádio / TV','Influenciador Digital','Outro (personalizado)'];
+  return `
+  <div class="sec-title">🤝 Fazer Parceria</div>
+  <div class="sec-sub">Cresce connosco — Angola precisa de ti</div>
+  <div class="card" style="margin-bottom:14px;font-size:13px;color:var(--muted);line-height:1.8;">
+    A Aluna está à procura de parceiros que acreditam no poder do conhecimento. Junta-te a nós e chega a milhares de angolanos!
+  </div>
+  <div class="card">
+    <div class="field"><label class="field-label">Tipo de Parceria *</label>
+      <select class="field-input" id="p-type"><option value="">Seleciona o tipo...</option>${types.map(t=>`<option>${t}</option>`).join('')}</select>
+    </div>
+    <div class="field" id="p-custom-wrap" style="display:none;"><label class="field-label">Descreve a tua ideia</label>
+      <textarea class="field-input" id="p-custom" rows="3" placeholder="A tua proposta..."></textarea>
+    </div>
+    <div class="field"><label class="field-label">Nome / Empresa *</label><input class="field-input" id="p-name" placeholder="O teu nome ou empresa"/></div>
+    <div class="field"><label class="field-label">E-mail</label><input class="field-input" id="p-email" type="email" placeholder="email@exemplo.com"/></div>
+    <div class="field"><label class="field-label">WhatsApp *</label><input class="field-input" id="p-wa" type="tel" placeholder="9XX XXX XXX"/></div>
+    <div class="field"><label class="field-label">Telefone (Unitel/Africel)</label><input class="field-input" id="p-tel" type="tel" placeholder="9XX XXX XXX"/></div>
+    <button class="btn btn-gold glow-pulse" id="p-send">📩 Enviar Proposta</button>
+  </div>
+  <div class="card" style="text-align:center;background:transparent;border:1px dashed var(--border);">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">📞 Contacto directo: <strong style="color:var(--gold);">937876711</strong></div>
+    <div style="font-size:12px;color:var(--muted);">WhatsApp parcerias: <strong style="color:var(--gold);">937876711 / 958614517</strong></div>
+  </div>`;
+}
+
+function attachPartnerEvents(){
+  const pType=$('p-type');
+  if(pType) pType.onchange=()=>{
+    const wrap=$('p-custom-wrap');
+    if(wrap) wrap.style.display=pType.value==='Outro (personalizado)'?'block':'none';
+  };
+  const pSend=$('p-send');
+  if(pSend) pSend.onclick=()=>{
+    const t=$('p-type').value, n=$('p-name')?.value.trim(), wa=$('p-wa')?.value.trim();
+    if(!t||!n||!wa) return toast('⚠️ Preenche os campos obrigatórios (*)');
+    toast('🤝 Proposta enviada! Entraremos em contacto em breve.');
+    ['p-name','p-email','p-wa','p-tel'].forEach(id=>{ const el=$(id); if(el) el.value=''; });
+    if($('p-type'))  $('p-type').value='';
+    if($('p-custom'))$('p-custom').value='';
+  };
+}
+
+/* ─── ADMIN ─── */
+function renderAdmin(){
+  const app=$('app');
+  if(!app)return;
+  const A=S.admin;
+  const adminTabs=[['dashboard','📊 Dashboard'],['users','👥 Utilizadores'],['bets','🎲 Apostas'],['wds','💸 Levantamentos'],['questions','❓ Perguntas'],['oracle','🤖 Oracle AI'],['api','🔑 APIs'],['settings','⚙️ Config']];
+
+  app.innerHTML=`
+  <div id="admin-wrap" style="display:flex;flex-direction:column;min-height:100dvh;background:var(--black);">
+    <header class="app-header" style="background:linear-gradient(135deg,rgba(13,0,0,.98),rgba(31,0,0,.98));">
+      <div><div class="logo-mark" style="font-size:22px;">ALUNA ADMIN</div><div class="logo-sub">Painel de Administração</div></div>
+      <button class="btn btn-ghost btn-sm" id="admin-exit">← Sair</button>
+    </header>
+    <div class="admin-tabs" style="margin-bottom:0;">
+      ${adminTabs.map(([k,l])=>`<button class="admin-tab-btn${A.tab===k?' active':''}" data-atab="${k}">${l}</button>`).join('')}
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 16px 80px;" id="admin-content"></div>
+    <footer class="app-footer">
+      <div class="footer-sign">GRUPO AGEA COMERCIAL | CEO ADELINO GRAÇA</div>
+    </footer>
+  </div>`;
+
+  $('admin-exit').onclick=()=>{ S.admin.open=false; render(S.currentTab); };
+  document.querySelectorAll('[data-atab]').forEach(btn=>{
+    btn.onclick=()=>{ S.admin.tab=btn.dataset.atab; renderAdminContent(); };
+  });
+  renderAdminContent();
+}
+
+function renderAdminContent(){
+  const c=$('admin-content');
+  if(!c)return;
+  const A=S.admin;
+  document.querySelectorAll('[data-atab]').forEach(b=>{ b.classList.toggle('active',b.dataset.atab===A.tab); });
+
+  switch(A.tab){
+    case 'dashboard': c.innerHTML=buildAdminDash();                               break;
+    case 'users':     c.innerHTML=buildAdminUsers();                              break;
+    case 'bets':      c.innerHTML=buildAdminBets();                               break;
+    case 'wds':       c.innerHTML=buildAdminWds();   attachAdminWdEvents();       break;
+    case 'questions': c.innerHTML=buildAdminQ();     attachAdminQEvents();        break;
+    case 'oracle':    c.innerHTML=buildAdminOracle();attachOracleEvents();        break;
+    case 'api':       c.innerHTML=buildAdminAPI();   attachAdminAPIEvents();      break;
+    case 'settings':  c.innerHTML=buildAdminSettings();attachAdminSettingsEvents();break;
+  }
+}
+
+function buildAdminDash(){
+  const pending=S.admin.withdrawals.filter(w=>w.status==='Pendente').length;
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+    ${[['4','Utilizadores','var(--gold)'],['28.500 Kz','Saldo Total','var(--green)'],['4','Apostas Hoje','var(--gold)'],[''+pending,'Lev. Pendentes','var(--red)']].map(([v,l,col])=>`
+    <div style="background:var(--surface3);border-radius:12px;padding:14px;border:1px solid var(--border);">
+      <div style="font-family:var(--font-display);font-size:26px;color:${col};">${v}</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">${l}</div>
+    </div>`).join('')}
+  </div>
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:12px;font-size:13px;color:var(--gold);">📈 Actividade Recente</div>
+    <div style="font-size:12px;color:var(--muted);line-height:2.2;">
+      • Fátima Neto ganhou 2.000 Kz — há 2h<br/>
+      • Esperança Lopes pediu levantamento 5.000 Kz — há 3h<br/>
+      • Carlos Teixeira perdeu 200 Kz — há 5h<br/>
+      • Novo registo: Ana Domingos (Malanje) — há 6h
+    </div>
+  </div>
+  <div class="card card-gold card-glow">
+    <div style="font-weight:700;margin-bottom:6px;">💰 Receita da Plataforma (25%)</div>
+    <div style="font-family:var(--font-display);font-size:40px;color:var(--gold);">7.125 Kz</div>
+    <div style="font-size:11px;color:var(--muted);">Total acumulado este mês</div>
+  </div>`;
+}
+
+function buildAdminUsers(){
+  const users=[
+    {id:1,name:'Kizua Mbemba',   prov:'Luanda',  bal:3200, w:12,l:4},
+    {id:2,name:'Esperança Lopes',prov:'Benguela', bal:8500, w:24,l:9},
+    {id:3,name:'Carlos Teixeira',prov:'Huambo',   bal:1200, w:5, l:7},
+    {id:4,name:'Fátima Neto',    prov:'Luanda',   bal:15600,w:45,l:18},
+  ];
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">👥 Utilizadores (${users.length})</div>
+  <div class="tbl-wrap">
+    <table><thead><tr><th>Nome</th><th>Prov.</th><th>Saldo Kz</th><th>V/D</th><th>Estado</th></tr></thead>
+    <tbody>${users.map(u=>`<tr><td>${u.name}</td><td>${u.prov}</td><td style="color:var(--gold);font-weight:700;">${fmt(u.bal)}</td><td><span style="color:var(--green);">${u.w}</span>/<span style="color:var(--red);">${u.l}</span></td><td><span class="badge badge-green">Activo</span></td></tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function buildAdminBets(){
+  const bets=[
+    {user:'Kizua Mbemba',   type:'IA',  amount:500,  profit:500},
+    {user:'Esperança Lopes',type:'Real',amount:1000, profit:1800},
+    {user:'Carlos Teixeira',type:'IA',  amount:200,  profit:-200},
+    {user:'Fátima Neto',    type:'IA',  amount:2000, profit:2000},
+  ];
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">🎲 Histórico de Apostas</div>
+  <div class="tbl-wrap">
+    <table><thead><tr><th>Utilizador</th><th>Tipo</th><th>Valor Kz</th><th>Resultado</th></tr></thead>
+    <tbody>${bets.map(b=>`<tr><td>${b.user}</td><td><span class="badge ${b.type==='IA'?'badge-gold':'badge-red'}">${b.type}</span></td><td>${fmt(b.amount)}</td><td style="color:${b.profit>0?'var(--green)':'var(--red)'};font-weight:700;">${b.profit>0?'+':''}${fmt(b.profit)} Kz</td></tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function buildAdminWds(){
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">💸 Pedidos de Levantamento (${S.admin.withdrawals.length})</div>
+  <div id="wd-list">
+  ${S.admin.withdrawals.map((w,i)=>`
+  <div class="card" style="border-color:${w.status==='Pendente'?'rgba(204,26,26,.4)':w.status==='Aprovado'?'rgba(0,201,127,.3)':'var(--border)'};">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <strong>${w.user}</strong>
+      <span class="badge ${w.status==='Pendente'?'badge-red':w.status==='Aprovado'?'badge-green':'badge-muted'}">${w.status}</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.9;">
+      Valor: <strong style="color:var(--gold);">${fmt(w.amount)} Kz</strong> · ${w.method}: ${w.number} · ${w.date}
+    </div>
+    ${w.status==='Pendente'?`<div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-green btn-sm" data-wd="${i}" data-action="Aprovado">✅ Aprovar</button>
+      <button class="btn btn-red btn-sm" data-wd="${i}" data-action="Rejeitado">❌ Rejeitar</button>
+    </div>`:''}
+  </div>`).join('')}
+  </div>`;
+}
+
+function attachAdminWdEvents(){
+  document.querySelectorAll('[data-wd]').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=Number(btn.dataset.wd), action=btn.dataset.action;
+      S.admin.withdrawals[i].status=action;
+      renderAdminContent();
+      toast(action==='Aprovado'?'✅ Levantamento aprovado':'❌ Levantamento rejeitado');
+    };
+  });
+}
+
+function buildAdminQ(){
+  const preview=S.admin.preview;
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">❓ Banco de Perguntas (${S.admin.questions.length})</div>
+  ${S.admin.questions.map((q,i)=>`
+  <div class="card" style="padding:14px;">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${q.q}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+      ${q.opts.map((o,j)=>`<span class="badge ${j===q.a?'badge-green':'badge-gold'}">${j===q.a?'✓ ':''}${o}</span>`).join('')}
+    </div>
+  </div>`).join('')}
+
+  <div style="font-weight:700;margin:16px 0 10px;font-size:13px;color:var(--gold);">🔮 Esteira de Pré-visualização</div>
+  ${preview.map((q,i)=>`
+  <div class="card" style="border-color:${q.approved?'rgba(0,201,127,.3)':'rgba(240,165,0,.3)'};">
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px;">${q.q}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;">
+      ${q.opts.map((o,j)=>`<span class="badge ${j===q.a?'badge-green':'badge-gold'}">${j===q.a?'✓ ':''}${o}</span>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-green btn-sm" data-pq="${i}" data-pact="approve" ${q.approved?'disabled':''}>✅ ${q.approved?'Aprovado':'Aprovar'}</button>
+      <button class="btn btn-ghost btn-sm" data-pq="${i}" data-pact="regen">🔄 Regerar</button>
+    </div>
+  </div>`).join('')}
+
+  <div class="card card-gold" style="margin-top:16px;">
+    <div style="font-weight:700;margin-bottom:12px;">➕ Adicionar Pergunta</div>
+    <div class="field"><label class="field-label">Pergunta</label><input class="field-input" id="nq-q" placeholder="Escreve a pergunta..."/></div>
+    ${[0,1,2,3].map(i=>`<div class="field"><label class="field-label">Opção ${i+1}</label><input class="field-input" id="nq-o${i}" placeholder="Opção ${i+1}"/></div>`).join('')}
+    <div class="field"><label class="field-label">Resposta Correcta</label>
+      <select class="field-input" id="nq-a">${[0,1,2,3].map(i=>`<option value="${i}">Opção ${i+1}</option>`).join('')}</select>
+    </div>
+    <button class="btn btn-gold" id="nq-add">Adicionar Pergunta</button>
+  </div>`;
+}
+
+function attachAdminQEvents(){
+  document.querySelectorAll('[data-pq]').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=Number(btn.dataset.pq), act=btn.dataset.pact;
+      if(act==='approve'){ S.admin.preview[i].approved=true; toast('✅ Pergunta aprovada!'); }
+      else {
+        const alts=['Qual é a divisa de Angola?','Quantos povos habitam Angola?','Qual é o produto mais exportado por Angola?'];
+        S.admin.preview[i]={q:alts[i%alts.length],opts:['Opção A','Opção B','Opção C','Opção D'],a:0,approved:false};
+        toast('🔄 Pergunta regerada!');
+      }
+      renderAdminContent();
+    };
+  });
+  const nqAdd=$('nq-add');
+  if(nqAdd) nqAdd.addEventListener('click',()=>{
+    const q=$('nq-q')?.value.trim();
+    const opts=[0,1,2,3].map(i=>$('nq-o'+i)?.value.trim());
+    if(!q||opts.some(o=>!o)) return toast('⚠️ Preenche pergunta e todas as opções');
+    S.admin.questions.push({q,opts,a:parseInt($('nq-a').value)});
+    toast('✅ Pergunta adicionada!');
+    renderAdminContent();
+  });
+}
+
+function buildAdminOracle(){
+  const A=S.admin;
+  const geminiOk=!!A.apiKeys.gemini;
+  return `
+  <div class="sec-title">🤖 Oracle AI</div>
+  <div class="sec-sub">Gera e gere perguntas com IA</div>
+  <div class="card" style="border-color:${geminiOk?'rgba(0,201,127,.4)':'rgba(204,26,26,.4)'};">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span class="api-dot ${geminiOk?'ok':'off'}"></span>
+      <strong style="font-size:13px;">Google Gemini — ${geminiOk?'Conectado':'Não configurado'}</strong>
+    </div>
+    <div style="font-size:12px;color:var(--muted);">
+      ${geminiOk?'A IA está pronta para gerar perguntas de cultura geral angolana.':'Configura a chave API Gemini na aba APIs para activar.'}
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:10px;font-size:13px;">🧠 Prompt Master</div>
+    <div class="field"><label class="field-label">Instrução para a IA</label>
+      <textarea class="field-input" id="oracle-prompt" rows="4">${geminiOk?'Gera 5 perguntas de cultura geral sobre Angola (história, geografia, cultura, economia). Dificuldade média. Formato JSON com campos: q, opts[4], a(índice 0-3).':'Configure a chave Gemini para activar este campo.'}</textarea>
+    </div>
+    <div class="field"><label class="field-label">Categoria</label>
+      <select class="field-input" id="oracle-cat">
+        <option>Cultura Geral Angola</option><option>História de Angola</option>
+        <option>Geografia de Angola</option><option>Economia Angola</option>
+        <option>Ciência e Tecnologia</option>
+      </select>
+    </div>
+    <div class="field"><label class="field-label">Dificuldade</label>
+      <select class="field-input" id="oracle-diff">
+        <option value="1">Fácil — Ensino Primário</option>
+        <option value="2" selected>Médio — Ensino Secundário</option>
+        <option value="3">Difícil — Universitário</option>
+      </select>
+    </div>
+    <button class="btn ${geminiOk?'btn-gold':'btn-ghost'}" id="oracle-gen" ${geminiOk?'':'disabled'}>
+      ${geminiOk?'🤖 Gerar Perguntas com IA':'🔒 Requer chave Gemini'}
+    </button>
+  </div>
+  <div class="card" id="oracle-result" style="display:none;">
+    <div style="font-weight:700;margin-bottom:10px;font-size:13px;color:var(--green);">✅ Perguntas Geradas</div>
+    <div id="oracle-q-list"></div>
+  </div>`;
+}
+
+function attachOracleEvents(){
+  const oracleBtn=$('oracle-gen');
+  if(!oracleBtn)return;
+  oracleBtn.addEventListener('click',async()=>{
+    oracleBtn.disabled=true;
+    oracleBtn.textContent='⏳ A gerar...';
+    const apiKey=S.admin.apiKeys.gemini;
+    if(!apiKey){ toast('⚠️ Chave Gemini não configurada'); oracleBtn.disabled=false; oracleBtn.textContent='🤖 Gerar Perguntas com IA'; return; }
+    const prompt=`${$('oracle-prompt').value}\nCategoria: ${$('oracle-cat').value}, Dificuldade: ${$('oracle-diff').value}.\nResponde APENAS com JSON válido: [{"q":"...","opts":["A","B","C","D"],"a":0},...]`;
+    try{
+      const resp=await safeApiCall(()=>fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+      }));
+      const data=await resp.json();
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'[]';
+      const clean=text.replace(/```json|```/g,'').trim();
+      const qs=JSON.parse(clean);
+      const listEl=$('oracle-q-list');
+      const resultEl=$('oracle-result');
+      if(listEl&&resultEl){
+        resultEl.style.display='block';
+        listEl.innerHTML=qs.map((q,i)=>`
+        <div style="margin-bottom:12px;padding:12px;background:var(--surface3);border-radius:8px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">${q.q}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+            ${q.opts.map((o,j)=>`<span class="badge ${j===q.a?'badge-green':'badge-gold'}">${j===q.a?'✓ ':''}${o}</span>`).join('')}
+          </div>
+          <button class="btn btn-green btn-sm" onclick="S.admin.questions.push(${JSON.stringify(q).replace(/'/g,'\\x27')});toast('✅ Adicionada!');this.disabled=true;this.textContent='✅ Adicionada';">Adicionar ao Banco</button>
+        </div>`).join('');
+      }
+      toast('✅ '+qs.length+' perguntas geradas!');
+    }catch(e){
+      toast('❌ Erro: '+(e.message==='timeout'?'Tempo esgotado (8s). Verifica a ligação.':e.message));
+    }
+    oracleBtn.disabled=false;
+    oracleBtn.textContent='🤖 Gerar Perguntas com IA';
+  });
+}
+
+function buildAdminAPI(){
+  const A=S.admin;
+  const apis=[
+    {key:'openai',   label:'OpenAI (ChatGPT)', desc:'IA de perguntas e personagem Luma'},
+    {key:'gemini',   label:'Google Gemini',    desc:'Geração de perguntas (Oracle AI)'},
+    {key:'supabase', label:'Supabase',         desc:'Base de dados e autenticação'},
+    {key:'apenay',   label:'Apenay',           desc:'Pagamentos automáticos'},
+  ];
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">🔑 Configuração de APIs</div>
+  <div class="card" style="border-color:rgba(240,165,0,.3);background:rgba(240,165,0,.04);font-size:12px;color:var(--muted);margin-bottom:14px;">
+    ⚠️ Chaves guardadas localmente. Após activar, as funcionalidades ligam automaticamente.
+  </div>
+  ${apis.map(a=>`
+  <div class="card" id="api-card-${a.key}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <strong>${a.label}</strong>
+      <span><span class="api-dot ${A.apiKeys[a.key]?'ok':'off'}"></span><span style="font-size:10px;color:${A.apiKeys[a.key]?'var(--green)':'var(--red)'};">${A.apiKeys[a.key]?'Activo':'Inactivo'}</span></span>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${a.desc}</div>
+    <div style="display:flex;gap:8px;">
+      <input class="field-input" type="password" id="api-${a.key}" placeholder="Inserir chave API..." value="${A.apiKeys[a.key]}" style="flex:1;padding:10px 14px;font-size:13px;"/>
+      <button class="btn btn-gold btn-sm" data-apikey="${a.key}">Activar</button>
+    </div>
+  </div>`).join('')}`;
+}
+
+function attachAdminAPIEvents(){
+  document.querySelectorAll('[data-apikey]').forEach(btn=>{
+    btn.onclick=()=>{
+      const k=btn.dataset.apikey;
+      const inp=$('api-'+k);
+      const val=inp?inp.value.trim():'';
+      if(!val) return toast('⚠️ Insere uma chave válida');
+      S.admin.apiKeys[k]=val;
+      toast('✅ '+k+' activado com sucesso!');
+      renderAdminContent();
+    };
+  });
+}
+
+function buildAdminSettings(){
+  const s=S.admin.settings;
+  return `
+  <div style="font-weight:700;margin-bottom:12px;">⚙️ Configurações Gerais</div>
+  <div class="card">
+    ${[
+      ['Chance de Vitória vs IA (%)','set-win',s.winChance,'number',1,99],
+      ['Levantamento Mínimo (Kz)','set-minwd',s.minWithdraw,'number',500,99999],
+      ['Bónus Máximo de Convites (Kz)','set-maxb',s.maxBonus,'number',0,10000],
+      ['Valor por Token (Kz)','set-tval',s.tokenValue,'number',1,1000],
+      ['Taxa da Plataforma (%)','set-fee',s.fee,'number',1,50],
+    ].map(([lbl,id,val,type,mn,mx])=>`
+    <div class="field">
+      <label class="field-label">${lbl}</label>
+      <input class="field-input" id="${id}" type="${type}" min="${mn}" max="${mx}" value="${val}"/>
+    </div>`).join('')}
+    <button class="btn btn-gold" id="save-settings">💾 Guardar Configurações</button>
+  </div>
+  <div class="card" style="margin-top:4px;">
+    <div style="font-weight:700;margin-bottom:12px;">📊 Status do Sistema</div>
+    ${[['Supabase DB','off'],['Gemini AI',S.admin.apiKeys.gemini?'ok':'off'],['Pagamentos','off'],['Notificações','off']].map(([lbl,st])=>`
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;">${lbl}</span>
+      <span><span class="api-dot ${st}"></span><span style="font-size:11px;color:${st==='ok'?'var(--green)':'var(--red)'};">${st==='ok'?'Online':'Offline'}</span></span>
+    </div>`).join('')}
+  </div>
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:12px;">📝 Política de Uso</div>
+    <textarea class="field-input" id="policy-text" rows="7">1. Levantamento mínimo: 1.500 Kz
+2. Apostas são finais e não reversíveis
+3. Convites devem ser de utilizadores reais
+4. A plataforma retém 25% do prémio total
+5. Proibido menores de 18 anos
+6. A plataforma reserva-se o direito de rever contas suspeitas</textarea>
+    <button class="btn btn-ghost" id="save-policy" style="margin-top:10px;">Actualizar Política</button>
+  </div>`;
+}
+
+function attachAdminSettingsEvents(){
+  const saveBtn=$('save-settings');
+  if(saveBtn) saveBtn.addEventListener('click',()=>{
+    const s=S.admin.settings;
+    s.winChance=parseInt($('set-win').value)||s.winChance;
+    s.minWithdraw=parseInt($('set-minwd').value)||s.minWithdraw;
+    s.maxBonus=parseInt($('set-maxb').value)||s.maxBonus;
+    s.tokenValue=parseInt($('set-tval').value)||s.tokenValue;
+    s.fee=parseInt($('set-fee').value)||s.fee;
+    toast('✅ Configurações guardadas com sucesso!');
+  });
+  const policyBtn=$('save-policy');
+  if(policyBtn) policyBtn.addEventListener('click',()=>toast('✅ Política actualizada!'));
+}
+
+/* ═══════════════════════════════════════════════
+   BOOT SYSTEM — ARRANQUE SEGURO V3.1
+═══════════════════════════════════════════════ */
+function alunaInit(){
+  /* ─── FLAG TRIGGER (ADMIN) ─── */
+  const flagEl=$('flag-trigger');
+  if(flagEl){
+    flagEl.addEventListener('click',()=>{
+      clearTimeout(S.flagTimer);
+      S.flagTaps++;
+      flagEl.classList.add('flash');
+      setTimeout(()=>flagEl.classList.remove('flash'),300);
+      if(S.flagTaps>=3){
+        S.flagTaps=0;
+        showOverlay('overlay-admin-login');
+        setTimeout(()=>$('admin-pw-input')?.focus(),100);
+      } else {
+        S.flagTimer=setTimeout(()=>{ S.flagTaps=0; },2000);
+      }
+    });
+  }
+
+  /* ─── ADMIN LOGIN ─── */
+  const doAdminLogin=()=>{
+    const inp=$('admin-pw-input');
+    if(!inp)return;
+    const pw=inp.value;
+    if(pw===ADMIN_SECRET){
+      hideOverlay('overlay-admin-login');
+      inp.value='';
+      S.admin.open=true;
+      Timer.stop();
+      clearInterval(S.battleIntervalRef);
+      renderAdmin();
+    } else {
+      toast('❌ Senha incorrecta');
+      inp.value='';
+    }
+  };
+
+  const okBtn=$('admin-pw-ok');
+  const pwInp=$('admin-pw-input');
+  const cancelBtn=$('admin-pw-cancel');
+  if(okBtn)     okBtn.onclick=doAdminLogin;
+  if(pwInp)     pwInp.onkeydown=e=>{ if(e.key==='Enter')doAdminLogin(); };
+  if(cancelBtn) cancelBtn.onclick=()=>{
+    hideOverlay('overlay-admin-login');
+    const inp=$('admin-pw-input');
+    if(inp) inp.value='';
+  };
+
+  /* ─── SPLASH ─── */
+  try{
+    showSplash();
+  }catch(e){
+    console.error('[Aluna] Boot crash:',e);
+    const app=$('app');
+    if(app) app.innerHTML=
+      '<div style="display:flex;flex-direction:column;align-items:center;'
+      +'justify-content:center;height:100dvh;background:#0A0A0A;'
+      +'color:#FFD700;font-family:sans-serif;text-align:center;padding:32px;">'
+      +'<div style="font-size:60px;margin-bottom:16px;">⚠️</div>'
+      +'<div style="font-size:20px;font-weight:700;margin-bottom:8px;">Erro de arranque</div>'
+      +'<div style="font-size:12px;color:#666;margin-bottom:24px;max-width:300px;">'+e.message+'</div>'
+      +'<button onclick="location.reload()" style="background:#F0A500;color:#000;'
+      +'border:none;padding:14px 32px;border-radius:8px;font-size:15px;'
+      +'font-weight:800;cursor:pointer;letter-spacing:1px;">🔄 RECARREGAR</button>'
+      +'</div>';
+  }
+}
+
+/* ─── ARRANQUE ─── */
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',alunaInit);
+}else{
+  alunaInit();
+}
+
+/* ═══════════════════════════════════════════════
+   PROTOCOL: JS INTERCEPTION — SCROLL LOCK FIX
+   Bloqueia touchmove fora da .scroll-area,
+   permite 100% de fluidez dentro dela.
+═══════════════════════════════════════════════ */
+(function installTouchGuard(){
+  function isInsideScrollArea(el){
+    while(el){
+      if(el.classList && el.classList.contains('scroll-area')) return true;
+      el=el.parentElement;
+    }
+    return false;
+  }
+
+  /* Regista com passive:false para poder chamar preventDefault() */
+  document.addEventListener('touchmove', function(e){
+    /* Permite toque em overlays (admin/resultado) — têm overflow próprio */
+    if(e.target.closest && e.target.closest('.overlay')) return;
+    /* Permite dentro da zona de scroll */
+    if(isInsideScrollArea(e.target)) return;
+    /* Bloqueia qualquer outro movimento que possa mover a página */
+    e.preventDefault();
+  }, { passive: false });
+
+  /* Garante que o toque inicial nunca arraста a página base */
+  document.addEventListener('touchstart', function(e){
+    if(e.target.closest && e.target.closest('.overlay')) return;
+    if(isInsideScrollArea(e.target)) return;
+    /* Não chama preventDefault aqui para manter interactividade dos botões */
+  }, { passive: true });
+})();
+</script>
+</body>
+</html>
