@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -52,21 +51,53 @@ img{display:block;max-width:100%;}
 input,select,textarea,button{font-family:var(--font-body);}
 
 /* ── APP SHELL ── */
+/* V4.0 LAYER ISOLATION: z-index:100 garante que o #app está sempre
+   acima do #bg-layer (z-index:1) e nunca colapsa para 0px */
 #app{
   max-width:480px;margin:0 auto;
-  /* PROTOCOL: INDEPENDENT SCROLL — app ocupa altura total do viewport */
   height:100dvh;
   width:100%;
   background:var(--black);
-  position:relative;display:flex;flex-direction:column;
-  overflow:hidden; /* só o scroll-area faz scroll */
+  position:relative;
+  z-index:100;
+  display:flex;flex-direction:column;
+  overflow:hidden;
   transition:background 1s ease-in-out;
 }
 
-/* ── BG LAYER (V3.1 — transição suave) ── */
+/* ── BG LAYER (V4.0) ── */
 #bg-layer{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
+  position:fixed;inset:0;
+  z-index:1;
+  pointer-events:none;
   transition:background 1s ease-in-out;
+}
+
+/* ── ANTI-TELA PRETA: SPLASH SKELETON CSS PURO ──
+   Visível instantaneamente antes de qualquer JS.
+   JS remove-o assim que está pronto. */
+#app-skeleton{
+  position:absolute;inset:0;z-index:10;
+  background:var(--black);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  transition:opacity .4s ease-out;
+}
+#app-skeleton.fade-out{opacity:0;pointer-events:none;}
+.skel-logo{
+  font-family:'Bebas Neue',sans-serif;font-size:90px;letter-spacing:10px;
+  background:linear-gradient(135deg,#FFD700,#F0A500,#c87800);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:screenIn .6s cubic-bezier(.16,1,.3,1);
+}
+.skel-sub{
+  font-size:11px;color:#777;letter-spacing:4px;text-transform:uppercase;
+  margin-top:6px;opacity:.7;font-family:'Outfit',sans-serif;
+}
+.skel-dots{margin-top:36px;display:flex;gap:8px;}
+.skel-sign{
+  margin-top:56px;font-size:10px;color:#444;letter-spacing:2px;
+  font-family:'Bebas Neue',sans-serif;
 }
 
 /* ── SCREENS ── */
@@ -484,7 +515,20 @@ tr:hover td{background:var(--surface3);}
 <body>
 <canvas id="confetti-canvas"></canvas>
 <div id="bg-layer"></div>
-<div id="app"><!-- telas injectadas pelo JS --></div>
+<!-- V4.0 ANTI-TELA PRETA: Splash skeleton puro em HTML/CSS,
+     visível imediatamente, sem depender de JS -->
+<div id="app">
+  <div id="app-skeleton">
+    <div class="skel-logo">Aluna</div>
+    <div class="skel-sub">Conhecimento · Poder · Vitória</div>
+    <div class="skel-dots">
+      <div class="waiting-dot"></div>
+      <div class="waiting-dot"></div>
+      <div class="waiting-dot"></div>
+    </div>
+    <div class="skel-sign">GRUPO AGEA COMERCIAL | CEO ADELINO GRAÇA</div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="flag-trigger">🇦🇴</div>
 <div class="overlay hidden" id="overlay-result">
@@ -804,6 +848,8 @@ function updateHeaderBalance(){
 
 /* ─── SPLASH ─── */
 function showSplash(){
+  /* V4.0: Remove o skeleton CSS antes de injectar o splash JS */
+  _removeSkeleton();
   $('app').innerHTML=`
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100dvh;background:var(--black);">
     <div style="font-family:var(--font-display);font-size:90px;letter-spacing:10px;background:linear-gradient(135deg,#FFD700,#F0A500,#c87800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:screenIn .6s var(--ease-out);">Aluna</div>
@@ -1904,9 +1950,21 @@ function attachAdminSettingsEvents(){
 }
 
 /* ═══════════════════════════════════════════════
-   BOOT SYSTEM — ARRANQUE SEGURO V3.1
+   BOOT SYSTEM — ARRANQUE SEGURO V4.0
+   Bootstrap blindado com fail-safe e anti-tela preta
 ═══════════════════════════════════════════════ */
+
+/* Remove o skeleton CSS e transfere controlo ao JS */
+function _removeSkeleton(){
+  const sk=document.getElementById('app-skeleton');
+  if(!sk)return;
+  sk.classList.add('fade-out');
+  setTimeout(()=>{ if(sk.parentNode)sk.parentNode.removeChild(sk); },420);
+}
+
 function alunaInit(){
+  console.log('SISTEMA ATIVO'); /* V4.0 — marcador de arranque */
+
   /* ─── FLAG TRIGGER (ADMIN) ─── */
   const flagEl=$('flag-trigger');
   if(flagEl){
@@ -1954,23 +2012,35 @@ function alunaInit(){
     if(inp) inp.value='';
   };
 
-  /* ─── SPLASH ─── */
+  /* ─── SPLASH + FAIL-SAFE ─── */
+  /* Se o showSplash() falhar por qualquer razão,
+     o fail-safe remove o skeleton e carrega o Login directamente */
   try{
     showSplash();
+    /* showSplash chama setTimeout→showLogin internamente,
+       por isso o skeleton é removido logo que o #app é preenchido */
   }catch(e){
-    console.error('[Aluna] Boot crash:',e);
-    const app=$('app');
-    if(app) app.innerHTML=
-      '<div style="display:flex;flex-direction:column;align-items:center;'
-      +'justify-content:center;height:100dvh;background:#0A0A0A;'
-      +'color:#FFD700;font-family:sans-serif;text-align:center;padding:32px;">'
-      +'<div style="font-size:60px;margin-bottom:16px;">⚠️</div>'
-      +'<div style="font-size:20px;font-weight:700;margin-bottom:8px;">Erro de arranque</div>'
-      +'<div style="font-size:12px;color:#666;margin-bottom:24px;max-width:300px;">'+e.message+'</div>'
-      +'<button onclick="location.reload()" style="background:#F0A500;color:#000;'
-      +'border:none;padding:14px 32px;border-radius:8px;font-size:15px;'
-      +'font-weight:800;cursor:pointer;letter-spacing:1px;">🔄 RECARREGAR</button>'
-      +'</div>';
+    console.error('[Aluna V4.0] Boot crash — activando Fail-safe:',e);
+    /* FAIL-SAFE: remove skeleton e carrega Login por defeito */
+    _removeSkeleton();
+    try{
+      showLogin();
+    }catch(e2){
+      console.error('[Aluna V4.0] Fail-safe crash:',e2);
+      /* Último recurso: mensagem de erro visível */
+      const app=$('app');
+      if(app) app.innerHTML=
+        '<div style="display:flex;flex-direction:column;align-items:center;'
+        +'justify-content:center;height:100dvh;background:#0A0A0A;'
+        +'color:#FFD700;font-family:sans-serif;text-align:center;padding:32px;">'
+        +'<div style="font-size:60px;margin-bottom:16px;">⚠️</div>'
+        +'<div style="font-size:20px;font-weight:700;margin-bottom:8px;">Erro de arranque</div>'
+        +'<div style="font-size:12px;color:#666;margin-bottom:24px;max-width:300px;">'+e.message+'</div>'
+        +'<button onclick="location.reload()" style="background:#F0A500;color:#000;'
+        +'border:none;padding:14px 32px;border-radius:8px;font-size:15px;'
+        +'font-weight:800;cursor:pointer;letter-spacing:1px;">🔄 RECARREGAR</button>'
+        +'</div>';
+    }
   }
 }
 
