@@ -13,13 +13,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--noir);font-fam
 .state{display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;overflow-x:hidden;}
 .state.active{display:flex;flex-direction:column;}
 
-/* DESIGN EDITORIAL (FASE 2) */
-.editorial-content{padding:40px 24px 100px; max-width:800px; margin:0 auto; font-family:'Cormorant Garamond',serif;}
-.editorial-title{font-family:'Cinzel',serif; font-size:24px; color:var(--gold); text-align:center; margin-bottom:32px; letter-spacing:4px;}
-.editorial-section{margin-bottom:40px; line-height:1.8; font-size:18px; color:var(--platinum); text-align:justify;}
-.editorial-section h2{font-family:'Cinzel',serif; font-size:14px; color:var(--gold3); margin-bottom:16px; letter-spacing:2px; border-bottom:1px solid rgba(212,175,55,0.2); padding-bottom:8px;}
-.quote-box{border-left:2px solid var(--gold); padding-left:20px; font-style:italic; margin:24px 0; color:var(--gold2);}
-
 /* PRELOADER */
 #state-preloader{align-items:center;justify-content:center;background:var(--noir);flex-direction:column;gap:32px;}
 .preloader-ring{width:120px;height:120px;position:relative;}
@@ -33,247 +26,208 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--noir);font-fam
 .preloader-msg{font-size:11px;letter-spacing:3px;color:var(--gold4);text-transform:uppercase;animation:pulse 1.5s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
 
+/* TICKER */
+.ticker-wrap{width:100%;overflow:hidden;background:var(--noir4);border-bottom:1px solid var(--gold4);padding:6px 0;flex-shrink:0;z-index:20;position:relative;}
+.ticker-inner{display:inline-flex;white-space:nowrap;animation:tickA 30s linear infinite;}
+@keyframes tickA{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ticker-item{font-size:11px;letter-spacing:2px;color:var(--gold);padding:0 32px;font-weight:500;}
+.ticker-sep{color:var(--gold4);}
+
 /* HEADER */
 .app-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(5,5,5,.95);border-bottom:1px solid rgba(212,175,55,.15);flex-shrink:0;z-index:20;position:relative;}
-.header-logo{font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);letter-spacing:3px;cursor:pointer;}
+.header-logo{font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);letter-spacing:3px;cursor:pointer;user-select:none;position:relative;}
+.header-logo::after{content:'V6';position:absolute;top:-6px;right:-22px;font-size:9px;color:var(--gold3);letter-spacing:1px;}
 .header-bal{display:flex;align-items:center;gap:6px;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:20px;padding:6px 14px;}
+.header-bal-icon{font-size:12px;color:var(--gold);}
 .header-bal-val{font-size:14px;font-weight:700;color:var(--gold2);letter-spacing:1px;}
+/* Balance split indicator */
+.bal-split{display:flex;gap:4px;font-size:8px;letter-spacing:1px;margin-top:1px;}
+.bal-real{color:var(--gold2);}
+.bal-bonus{color:var(--blue);opacity:.7;}
+
+/* PLATINUM CARD */
+.platinum-card{margin:20px 16px;background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 40%,#1f1a0a 70%,#0a0a0a 100%);border-radius:16px;padding:24px;border:1px solid rgba(212,175,55,.3);position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6),inset 0 1px 0 rgba(212,175,55,.1);flex-shrink:0;}
+.platinum-card::before{content:'';position:absolute;top:-40%;right:-20%;width:200px;height:200px;background:radial-gradient(circle,rgba(212,175,55,.06) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;}
+.card-brand{font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:var(--gold3);}
+.card-type{font-size:10px;letter-spacing:3px;color:var(--silver);}
+.card-chip{width:36px;height:28px;border-radius:4px;background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));position:relative;overflow:hidden;}
+.card-chip::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,.3);}
+.card-chip::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(0,0,0,.3);}
+.card-holo{width:32px;height:32px;border-radius:4px;background:linear-gradient(45deg,#ff006688,#0066ff88,#00ff6688,#ff006688);background-size:300% 300%;animation:holo 3s ease infinite;opacity:.7;}
+@keyframes holo{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.card-balance-label{font-size:10px;letter-spacing:3px;color:var(--silver);margin-bottom:4px;}
+.card-balance-val{font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:var(--gold2);letter-spacing:2px;}
+.card-balance-val span{font-size:13px;color:var(--gold4);margin-left:4px;}
+.card-balance-split{display:flex;gap:12px;margin-top:6px;font-size:10px;letter-spacing:1px;}
+.card-split-real{color:var(--gold2);}
+.card-split-bonus{color:#5BA3E0;}
+.card-footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;}
+.card-id{font-size:11px;letter-spacing:2px;color:var(--gold4);}
+.card-id-val{font-size:13px;letter-spacing:3px;color:var(--silver);margin-top:2px;}
+.card-actions{display:flex;gap:8px;}
+.card-btn{padding:6px 12px;border-radius:20px;font-size:10px;letter-spacing:2px;font-weight:600;cursor:pointer;border:none;transition:var(--trans);font-family:'Rajdhani',sans-serif;}
+.card-btn-dep{background:linear-gradient(135deg,var(--gold3),var(--gold));color:var(--noir);}
+.card-btn-lev{background:transparent;color:var(--gold3);border:1px solid var(--gold4);}
 
 /* HOME */
-.platinum-card{margin:20px 16px;background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 40%,#1f1a0a 70%,#0a0a0a 100%);border-radius:16px;padding:24px;border:1px solid rgba(212,175,55,0.3);position:relative;overflow:hidden;}
-.card-balance-val{font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:var(--gold2);letter-spacing:2px;}
-.hero-actions{padding:16px;display:flex;flex-direction:column;gap:12px;}
-.hero-btn{width:100%;border:none;border-radius:14px;padding:22px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:14px;}
-.hero-btn-compete{background:linear-gradient(135deg,var(--gold3),var(--gold));}
-.hero-btn-title{font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:2px;color:var(--noir);}
+#state-home{background:var(--noir);}
+.home-scroll{flex:1;overflow-y:auto;padding-bottom:80px;}
+.section-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:var(--gold4);text-transform:uppercase;padding:0 20px 12px;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:0 16px 20px;}
+.stat-card{background:var(--noir3);border:1px solid rgba(212,175,55,.1);border-radius:10px;padding:14px 10px;text-align:center;}
+.stat-val{font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--gold2);}
+.stat-lbl{font-size:9px;letter-spacing:2px;color:var(--silver);margin-top:2px;}
 
-/* TIMER PULSATION (FASE 3) */
-.timer-critical{animation:timerPulse 0.5s ease infinite;}
-@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15); filter:drop-shadow(0 0 12px var(--red2));}}
+/* HERO BUTTONS */
+.hero-actions{padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px;}
+.hero-btn{width:100%;border:none;border-radius:14px;padding:22px 20px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:var(--trans);position:relative;overflow:hidden;}
+.hero-btn:active{transform:scale(.97);}
+.hero-btn-compete{background:linear-gradient(135deg,var(--gold3),var(--gold),var(--gold2));box-shadow:0 4px 24px rgba(212,175,55,.35);}
+.hero-btn-free{background:linear-gradient(135deg,#1A3A5C,#234E78,#2D6494);border:1px solid rgba(212,175,55,.25);}
+.hero-btn-icon{font-size:28px;flex-shrink:0;}
+.hero-btn-text{text-align:left;}
+.hero-btn-title{font-family:'Cinzel',serif;font-size:15px;font-weight:700;letter-spacing:2px;line-height:1.2;}
+.hero-btn-compete .hero-btn-title{color:var(--noir);}
+.hero-btn-free .hero-btn-title{color:var(--gold2);}
+.hero-btn-sub{font-size:10px;letter-spacing:1px;margin-top:2px;}
+.hero-btn-compete .hero-btn-sub{color:rgba(5,5,5,.7);}
+.hero-btn-free .hero-btn-sub{color:rgba(255,255,255,.6);}
+.hero-btn-badge{position:absolute;top:8px;right:12px;font-size:8px;letter-spacing:2px;font-weight:700;padding:3px 8px;border-radius:10px;}
+.hero-btn-compete .hero-btn-badge{background:rgba(5,5,5,.15);color:var(--noir);}
+.hero-btn-free .hero-btn-badge{background:rgba(212,175,55,.15);color:var(--gold);}
+.free-mode-bar{display:none;align-items:center;justify-content:center;gap:8px;padding:6px 0;background:rgba(26,58,92,.3);border-bottom:1px solid rgba(45,100,148,.4);font-size:10px;letter-spacing:2px;color:#5BA3E0;flex-shrink:0;}
+.free-mode-bar.active{display:flex;}
 
-/* MODO DEUS (FASE 4) */
-#state-admin{background:var(--noir2); padding:20px;}
-.admin-tab{display:none; flex-direction:column; gap:15px;}
-.admin-tab.active{display:flex;}
-.admin-nav{display:flex; gap:10px; margin-bottom:20px; overflow-x:auto;}
-.admin-nav-btn{padding:8px 16px; background:var(--noir4); border:1px solid var(--gold4); color:var(--white); cursor:pointer; font-family:'Cinzel',serif; font-size:10px;}
-.admin-nav-btn.active{background:var(--gold); color:var(--noir);}
-textarea{background:var(--noir3); color:var(--white); border:1px solid var(--gold4); padding:10px; border-radius:8px;}
+/* SECONDARY */
+.secondary-section{padding:0 16px 20px;}
+.secondary-toggle{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;cursor:pointer;border-radius:10px;background:var(--noir3);border:1px solid rgba(212,175,55,.06);margin-bottom:10px;}
+.secondary-toggle-lbl{font-size:11px;letter-spacing:2px;color:var(--silver);}
+.secondary-toggle-arrow{font-size:10px;color:var(--gold4);transition:transform .3s;}
+.secondary-toggle.open .secondary-toggle-arrow{transform:rotate(180deg);}
+.secondary-grid{display:none;grid-template-columns:1fr 1fr;gap:10px;}
+.secondary-grid.open{display:grid;}
+.secondary-grid .qa-btn{opacity:.7;border-color:rgba(212,175,55,.06);}
+.qa-btn{background:var(--noir3);border:1px solid rgba(212,175,55,.12);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;cursor:pointer;transition:var(--trans);}
+.qa-btn:active{transform:scale(.97);}
+.qa-icon{font-size:22px;}
+.qa-label{font-size:12px;font-weight:600;letter-spacing:1px;color:var(--white);}
+.qa-sub{font-size:10px;color:var(--silver);}
 
-/* FOOTER BRANDING (FASE 2) */
-.footer-brand{text-align:center; padding:20px; border-top:1px solid rgba(212,175,55,0.1); margin-top:auto;}
-.footer-brand-text{font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; color:var(--gold4); text-transform:uppercase;}
+/* LEADERBOARD */
+.leaderboard{padding:0 16px 24px;}
+.lb-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--noir3);margin-bottom:8px;border:1px solid rgba(212,175,55,.06);}
+.lb-rank{font-family:'Cinzel',serif;font-size:16px;font-weight:700;width:24px;text-align:center;}
+.lb-rank.gold{color:var(--gold);}
+.lb-rank.silver{color:var(--silver);}
+.lb-rank.bronze{color:#CD7F32;}
+.lb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold4),var(--gold3));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--noir);flex-shrink:0;}
+.lb-info{flex:1;}
+.lb-name{font-size:13px;font-weight:600;}
+.lb-pts{font-size:10px;color:var(--gold4);letter-spacing:1px;}
+.lb-val{font-family:'Cinzel',serif;font-size:14px;color:var(--gold2);font-weight:700;}
 
-</style>
-</head>
-<body>
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(5,5,5,.97);border-top:1px solid rgba(212,175,55,.15);display:flex;align-items:center;justify-content:space-around;padding:8px 0 max(8px,env(safe-area-inset-bottom));}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;transition:var(--trans);border-radius:8px;min-width:56px;}
+.nav-item.active .nav-icon,.nav-item.active .nav-lbl{color:var(--gold);}
+.nav-icon{font-size:20px;color:var(--silver);transition:var(--trans);}
+.nav-lbl{font-size:9px;letter-spacing:1px;color:var(--silver);}
 
-<canvas id="sparkCanvas"></canvas>
+/* SALAS */
+#state-salas{background:var(--noir);}
+.salas-scroll{flex:1;overflow-y:auto;padding:20px 16px 80px;}
+.salas-header{text-align:center;padding:16px 20px 24px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:var(--gold4);}
+.sala-card{background:var(--noir3);border-radius:14px;border:1px solid rgba(212,175,55,.12);padding:20px;margin-bottom:12px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:16px;position:relative;overflow:hidden;}
+.sala-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--gold3),var(--gold4));border-radius:3px 0 0 3px;}
+.sala-card:active{transform:scale(.98);}
+.sala-card.locked{opacity:.5;cursor:not-allowed;}
+.sala-card.locked::after{content:'🔒';position:absolute;top:12px;right:12px;font-size:14px;}
+.sala-icon{font-size:32px;}
+.sala-info{flex:1;}
+.sala-name{font-family:'Cinzel',serif;font-size:14px;font-weight:600;margin-bottom:2px;}
+.sala-desc{font-size:11px;color:var(--silver);letter-spacing:1px;}
+.sala-players{font-size:10px;color:var(--gold4);margin-top:4px;}
+.sala-prize{text-align:right;}
+.sala-prize-val{font-family:'Cinzel',serif;font-size:18px;font-weight:700;color:var(--gold2);}
+.sala-prize-lbl{font-size:9px;letter-spacing:2px;color:var(--silver);}
 
-<div id="state-preloader" class="state active">
-    <div class="preloader-ring">
-        <svg><circle cx="60" cy="60" r="50"></circle></svg>
-        <div class="preloader-logo-inner">A</div>
-    </div>
-    <div class="preloader-title">ALUNA V6</div>
-    <div class="preloader-bar-wrap"><div id="preloaderBar" class="preloader-bar"></div></div>
-    <div id="preloaderMsg" class="preloader-msg">A INICIALIZAR...</div>
-</div>
+/* LOBBY */
+#state-lobby{background:var(--noir);align-items:center;justify-content:center;flex-direction:column;}
+.lobby-inner{width:100%;max-width:360px;padding:20px;text-align:center;}
+.lobby-title{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold);letter-spacing:3px;margin-bottom:8px;}
+.lobby-sub{font-size:12px;letter-spacing:3px;color:var(--silver);margin-bottom:32px;}
+.lobby-countdown{font-family:'Cinzel',serif;font-size:80px;font-weight:900;color:var(--gold2);line-height:1;margin-bottom:8px;text-shadow:0 0 40px rgba(212,175,55,.4);transition:all .3s;}
+/* FASE 3: Pulsação neon nos últimos 5s */
+.lobby-countdown.critical{color:var(--red2);text-shadow:0 0 60px rgba(231,76,60,.8),0 0 120px rgba(231,76,60,.4);animation:cdPulse .5s ease infinite;}
+@keyframes cdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+.lobby-cd-lbl{font-size:10px;letter-spacing:4px;color:var(--silver);margin-bottom:24px;}
+.lobby-players{background:var(--noir3);border:1px solid rgba(212,175,55,.1);border-radius:12px;padding:16px;margin-bottom:16px;}
+.lobby-players-title{font-size:10px;letter-spacing:3px;color:var(--gold4);margin-bottom:12px;}
+.lobby-list{display:flex;flex-direction:column;gap:6px;max-height:140px;overflow:hidden;}
+.lobby-player{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:6px;background:rgba(212,175,55,.04);animation:plIn .3s ease;}
+@keyframes plIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.lobby-player-dot{width:8px;height:8px;border-radius:50%;background:var(--green2);flex-shrink:0;animation:dotB 1.5s ease infinite;}
+@keyframes dotB{0%,100%{opacity:1}50%{opacity:.3}}
+.lobby-player-name{font-size:12px;font-weight:600;flex:1;text-align:left;}
+.lobby-player-badge{font-size:9px;letter-spacing:1px;color:var(--gold4);background:rgba(212,175,55,.08);padding:2px 6px;border-radius:10px;}
+/* FASE 3: Pote dinâmico */
+.lobby-pot{background:linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04));border:1px solid rgba(212,175,55,.3);border-radius:14px;padding:16px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;}
+.lobby-pot::after{content:'';position:absolute;inset:0;background:linear-gradient(45deg,transparent,rgba(212,175,55,.1),transparent);animation:potShine 2s ease infinite;}
+@keyframes potShine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.lobby-pot-lbl{font-size:9px;letter-spacing:3px;color:var(--gold4);}
+.lobby-pot-val{font-family:'Cinzel',serif;font-size:32px;font-weight:900;color:var(--gold2);transition:all .5s;text-shadow:0 0 20px rgba(212,175,55,.4);}
+.lobby-pot-val.grow{animation:potGrow .6s ease;}
+@keyframes potGrow{0%{transform:scale(1)}50%{transform:scale(1.2);text-shadow:0 0 40px rgba(212,175,55,.8)}100%{transform:scale(1)}}
+/* ADS OVERLAY */
+.lobby-ad{display:none;background:var(--noir3);border:1px solid rgba(212,175,55,.1);border-radius:12px;padding:12px;margin-bottom:16px;text-align:center;position:relative;}
+.lobby-ad.active{display:block;}
+.lobby-ad-partner{font-size:9px;letter-spacing:2px;color:var(--gold4);margin-bottom:4px;}
+.lobby-ad-content{border-radius:8px;overflow:hidden;position:relative;}
+.lobby-ad-content img,.lobby-ad-content video{width:100%;border-radius:8px;}
+.lobby-ad-skip{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:var(--white);border:none;border-radius:12px;padding:4px 10px;font-size:9px;cursor:pointer;}
 
-<div id="state-home" class="state">
-    <header class="app-header">
-        <div class="header-logo" onclick="goTo('home')">ALUNA</div>
-        <div class="header-bal">
-            <span class="header-bal-val" id="headerBal">0 Kz</span>
-        </div>
-    </header>
-    
-    <div class="platinum-card">
-        <div style="font-size:10px; letter-spacing:3px; color:var(--silver);">SALDO TOTAL</div>
-        <div class="card-balance-val" id="cardBal">0<span>Kz</span></div>
-        <div style="display:flex; gap:15px; margin-top:10px; font-size:11px;">
-            <span style="color:var(--gold2)">Real: <b id="balReal">0</b></span>
-            <span style="color:var(--blue)">Bónus: <b id="balBonus">0</b></span>
-        </div>
-    </div>
+/* JOGO */
+#state-jogo{background:var(--noir);flex-direction:column;}
+.jogo-header{padding:16px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(212,175,55,.1);flex-shrink:0;}
+.jogo-progress{flex:1;height:3px;background:var(--noir4);border-radius:2px;overflow:hidden;}
+.jogo-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold3),var(--gold2));border-radius:2px;transition:width .5s ease;}
+.jogo-qnum{font-size:11px;letter-spacing:2px;color:var(--silver);white-space:nowrap;}
+.jogo-score-hdr{font-family:'Cinzel',serif;font-size:14px;color:var(--gold2);font-weight:700;white-space:nowrap;}
+.jogo-body{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;}
+.jogo-timer-wrap{display:flex;align-items:center;justify-content:center;margin-bottom:24px;}
+.jogo-timer-ring{width:80px;height:80px;position:relative;flex-shrink:0;transition:all .3s;}
+.jogo-timer-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+.jogo-timer-ring svg circle{fill:none;stroke-width:4;stroke-linecap:round;}
+.jogo-timer-ring svg .bg{stroke:var(--noir4);}
+.jogo-timer-ring svg .fg{stroke:var(--gold);stroke-dasharray:220;transition:stroke-dashoffset .9s linear,stroke .3s;}
+.jogo-timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--gold);transition:all .3s;}
+/* FASE 3: Timer pulsing neon */
+.timer-critical .jogo-timer-num{color:var(--red2);text-shadow:0 0 20px rgba(231,76,60,.8);}
+.timer-critical .jogo-timer-ring svg .fg{stroke:var(--red2);}
+.timer-critical .jogo-timer-ring{animation:timerPulse .5s ease infinite;}
+@keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15);filter:drop-shadow(0 0 12px rgba(231,76,60,.6))}}
+.timer-alert .jogo-timer-num{color:#F39C12;}
+.jogo-categoria{font-size:10px;letter-spacing:3px;color:var(--gold4);text-align:center;margin-bottom:16px;text-transform:uppercase;}
+.jogo-pergunta{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;line-height:1.5;text-align:center;color:var(--white);margin-bottom:28px;flex:1;}
+.opcoes{display:flex;flex-direction:column;gap:10px;}
+.opcao{background:var(--noir3);border:1px solid rgba(212,175,55,.12);border-radius:12px;padding:16px 18px;cursor:pointer;transition:var(--trans);display:flex;align-items:center;gap:12px;user-select:none;}
+.opcao:active:not(.disabled){transform:scale(.98);}
+.opcao.disabled{pointer-events:none;}
+.opcao-letra{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold4);transition:var(--trans);}
+.opcao-texto{font-size:14px;font-weight:500;line-height:1.3;}
+.opcao.correct{background:rgba(26,122,74,.2);border-color:var(--green2);}
+.opcao.correct .opcao-letra{background:var(--green2);color:var(--white);border-color:var(--green2);}
+.opcao.wrong{background:rgba(192,57,43,.2);border-color:var(--red2);}
+.opcao.wrong .opcao-letra{background:var(--red2);color:var(--white);border-color:var(--red2);}
+/* FASE 3: First-to-action badge */
+.speed-badge{font-size:9px;color:var(--gold);letter-spacing:1px;margin-left:auto;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-    <div class="hero-actions">
-        <button class="hero-btn hero-btn-compete" onclick="goTo('salas')">
-            <div class="hero-btn-text">
-                <div class="hero-btn-title">JOGAR PARA COMPETIR</div>
-                <div style="font-size:10px; color:rgba(0,0,0,0.6)">Ganha prémios em Kwanzas reais</div>
-            </div>
-        </button>
-        <button class="hero-btn" style="background:var(--noir3); border:1px solid var(--gold4);" onclick="startFreeMode()">
-            <div class="hero-btn-text">
-                <div class="hero-btn-title" style="color:var(--white)">JOGAR GRATUITAMENTE</div>
-                <div style="font-size:10px; color:var(--silver)">Treina as tuas habilidades</div>
-            </div>
-        </button>
-    </div>
-
-    <div class="footer-brand">
-        <div class="footer-brand-text">Grupo Agea Comercial</div>
-    </div>
-</div>
-
-<div id="state-admin" class="state">
-    <div class="editorial-title">MODO DEUS</div>
-    <div class="admin-nav">
-        <button class="admin-nav-btn active" onclick="setTab(0)">CURADORIA IA</button>
-        <button class="admin-nav-btn" onclick="setTab(1)">MONETIZAÇÃO</button>
-        <button class="admin-nav-btn" onclick="setTab(2)">ANÚNCIOS</button>
-    </div>
-
-    <div id="tab-0" class="admin-tab active">
-        <div style="font-size:11px; color:var(--gold4); margin-bottom:5px;">SYSTEM PROMPT GEMINI</div>
-        <textarea id="aiPrompt" rows="4">Gera perguntas de lógica e cultura geral sobre Angola. Usa gírias de Luanda moderadamente.</textarea>
-        <button class="hero-btn hero-btn-compete" style="padding:10px; margin-top:10px;" onclick="generateAIQuestions()">GERAR PERGUNTAS AGORA</button>
-        <div id="aiQueue" style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
-            </div>
-    </div>
-    <button class="hero-btn" style="margin-top:auto; background:var(--noir4);" onclick="goTo('home')">VOLTAR</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// --- CONFIGURAÇÃO SUPABASE (V6) ---
-const SUPABASE_URL = 'https://enojfnwarrroaobxurrl.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVub2pmbndhcnJyb2FvYnh1cnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjMxMjMsImV4cCI6MjA5MTEzOTEyM30.x0iTVooX8wdsAhwdcH6oHMnngIH49uHuEGNnPZbrHog';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// --- CONFIGURAÇÃO GEMINI AI (V6) ---
-// Adelino, a tua chave foi inserida aqui conforme solicitado:
-let GEMINI_API_KEY = 'AIzaSyCoth_Ax9jPH_FVx4b87jl2C54STwgIUjc';
-const GEMINI_MODEL = 'gemini-1.5-flash';
-
-const APP = {
-    userId: '',
-    balanceReal: 0,
-    balanceBonus: 0,
-    referralCode: '',
-    currentState: 'preloader'
-};
-
-function goTo(stateId) {
-    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
-    document.getElementById('state-' + stateId).classList.add('active');
-    APP.currentState = stateId;
-}
-
-// INTEGRAÇÃO GEMINI (FASE 5)
-async function generateAIQuestions() {
-    if(!GEMINI_API_KEY) return alert("Insere a API Key no código primeiro!");
-    const btn = event.target;
-    btn.textContent = "A GERAR...";
-    btn.disabled = true;
-
-    const promptText = document.getElementById('aiPrompt').value;
-    const finalPrompt = `${promptText}. Devolve apenas um array JSON com 3 objetos contendo: category, question, options (array de 4), correct_index (0-3), context_tag.`;
-
-    try {
-        const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] })
-        });
-        const json = await resp.json();
-        const text = json.candidates[0].content.parts[0].text;
-        const cleanJson = text.replace(/```json|```/g, '');
-        const questions = JSON.parse(cleanJson);
-
-        // Enviar para a Curadoria no Supabase
-        for(let q of questions) {
-            await db.from('ai_questions_bank').insert({
-                category: q.category,
-                question: q.question,
-                options: q.options,
-                correct_index: q.correct_index,
-                context_tag: q.context_tag,
-                status: 'pending'
-            });
-        }
-        alert("Perguntas geradas e enviadas para Curadoria!");
-        loadAIQueue();
-    } catch(e) {
-        console.error(e);
-        alert("Erro ao falar com o Gemini.");
-    } finally {
-        btn.textContent = "GERAR PERGUNTAS AGORA";
-        btn.disabled = false;
-    }
-}
-
-async function loadAIQueue() {
-    const {data} = await db.from('ai_questions_bank').select('*').eq('status','pending');
-    const container = document.getElementById('aiQueue');
-    container.innerHTML = '';
-    if(data) {
-        data.forEach(q => {
-            const div = document.createElement('div');
-            div.style.padding = "10px"; div.style.background = "var(--noir4)";
-            div.innerHTML = `
-                <div style="font-size:12px; color:var(--gold)">${q.question}</div>
-                <button onclick="reviewQ(${q.id}, 'approved')" style="color:var(--green)">✓</button>
-                <button onclick="reviewQ(${q.id}, 'rejected')" style="color:var(--red)">X</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-}
-
-async function reviewQ(id, action) {
-    await db.rpc('rpc_review_ai_question', { p_question_id: id, p_action: action });
-    loadAIQueue();
-}
-
-// BOOT (FASE 1)
-(async function boot(){
-    const bar = document.getElementById('preloaderBar');
-    const msg = document.getElementById('preloaderMsg');
-    
-    try {
-        bar.style.width = '30%';
-        msg.textContent = 'A CONECTAR AO SUPABASE...';
-        
-        let uid = localStorage.getItem('aluna_uid') || 'U-' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('aluna_uid', uid);
-        APP.userId = uid;
-
-        bar.style.width = '60%';
-        msg.textContent = 'A SINCRONIZAR SALDOS V6...';
-        
-        const {data, error} = await db.rpc('rpc_register_player_v6', { p_user_id: uid });
-        
-        if(data) {
-            APP.balanceReal = data.balance_real || 0;
-            APP.balanceBonus = data.balance_bonus || 0;
-            APP.referralCode = data.referral_code || '';
-        }
-
-        bar.style.width = '100%';
-        msg.textContent = 'BEM-VINDO, CEO';
-        
-        setTimeout(() => {
-            document.getElementById('headerBal').textContent = (APP.balanceReal + APP.balanceBonus) + ' Kz';
-            document.getElementById('balReal').textContent = APP.balanceReal;
-            document.getElementById('balBonus').textContent = APP.balanceBonus;
-            goTo('home');
-        }, 800);
-
-    } catch(e) {
-        console.error(e);
-        msg.textContent = 'ERRO DE CONEXÃO. TENTE NOVAMENTE.';
-    }
-})();
-
-function setTab(idx) {
-    document.querySelectorAll('.admin-tab').forEach((t, i) => {
-        t.classList.toggle('active', i === idx);
-    });
-    document.querySelectorAll('.admin-nav-btn').forEach((b, i) => {
-        b.classList.toggle('active', i === idx);
-    });
-}
-</script>
-</body>
-</html>
+/* RESULTADO */
+#state-resultado{background:var(--noir);align-items:center;justify-content:center;flex-direction:column;}
+.resultado-inner{width:100%;max-width:360px;padding:32px 20px;text-align:center;}
+.resultado-emoji{font-size:72px;margin-bottom:16px;animation:bounceIn .6s ease;}
+@keyframes bounceIn{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.resultado-titulo{font-family:'Cinzel',serif;font-size:28px;font-weight:900;color:var(--gold);letter-spacing:3px;margin-bottom:8px;}
+.resultado-sub{font-size:13px;color:var(--silver);margin-bottom:32px;lett
